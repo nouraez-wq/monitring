@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EnerPort SME</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Concept : console d'exploitation portuaire. Navigation latérale, bandeau de contexte, grille de cartes. Titres en Bricolage, données en IBM Plex Mono. */
+:root{
+  --bg:#F1F4F6;--surface:#FFFFFF;--surface2:#F6F8FA;--ink:#13232F;--muted:#5A6B78;--line:#DDE4EA;
+  --accent:#0A6C8B;--accent-ink:#FFFFFF;--accent-soft:#E1F0F5;
+  --good:#1B8A55;--good-soft:#DFF3E8;--warn:#B06A08;--warn-soft:#FBEFD9;--crit:#C23A3A;--crit-soft:#FBE4E4;
+  --c1:#0A6C8B;--c2:#D9822B;--c3:#5A5FC9;--c4:#2E9E6B;--c5:#C2447A;--c6:#6F7F8C;--sea:#CDE5EE;--land:#EEF0EA;--quay:#D3D8CF;
+  --f-display:'Bricolage Grotesque',system-ui,sans-serif;--f-body:'IBM Plex Sans',system-ui,sans-serif;--f-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C171F;--surface:#121F29;--surface2:#172833;--ink:#E7EFF4;--muted:#93A5B3;--line:#243846;
+  --accent:#4DB8D6;--accent-ink:#06222C;--accent-soft:#12323E;
+  --good:#47C58A;--good-soft:#123425;--warn:#E8A33C;--warn-soft:#3A2D12;--crit:#F07A7A;--crit-soft:#3E1C1F;
+  --c1:#4DB8D6;--c2:#F0A24E;--c3:#8C90F0;--c4:#52CF94;--c5:#EE7FB0;--c6:#A5B4C0;--sea:#0F2A38;--land:#17242C;--quay:#233640;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C171F;--surface:#121F29;--surface2:#172833;--ink:#E7EFF4;--muted:#93A5B3;--line:#243846;
+  --accent:#4DB8D6;--accent-ink:#06222C;--accent-soft:#12323E;
+  --good:#47C58A;--good-soft:#123425;--warn:#E8A33C;--warn-soft:#3A2D12;--crit:#F07A7A;--crit-soft:#3E1C1F;
+  --c1:#4DB8D6;--c2:#F0A24E;--c3:#8C90F0;--c4:#52CF94;--c5:#EE7FB0;--c6:#A5B4C0;--sea:#0F2A38;--land:#17242C;--quay:#233640;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body)}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;font-weight:700;letter-spacing:-.01em}
+h1{font-size:26px;line-height:1.15}h2{font-size:16px}h3{font-size:14px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);gap:20px;max-width:1560px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.side{position:sticky;top:16px;align-self:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 10px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 32px);overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px}
+.brand svg{flex:none}
+.brand b{font:700 17px var(--f-display);display:block;line-height:1.1}
+.brand span{font-size:11.5px;color:var(--muted);line-height:1.3;display:block}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:500}
+.nav a:hover{background:var(--surface2);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.nav svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav .sep{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:10px 10px 2px}
+.sidefoot{font-size:11.5px;color:var(--muted);padding:0 8px;line-height:1.4}
+main{min-width:0;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap}
+.top p{margin:4px 0 0;color:var(--muted)}
+.ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.note{background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:7px 12px;font-size:12.5px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card>header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px 16px;flex-wrap:wrap;margin-bottom:12px}
+.card>header p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.grid{display:grid;gap:16px;min-width:0}
+.g-kpi{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g-2{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.g-al{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.g-eq{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.g-sites{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.kpi{display:flex;flex-direction:column;gap:2px}
+.kpi small{color:var(--muted);font-size:12px;font-weight:500}
+.kpi b{font:700 30px/1.1 var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi b i{font:500 13px var(--f-mono);font-style:normal;color:var(--muted);letter-spacing:0;margin-left:5px}
+.kpi span{font-size:12px;color:var(--muted)}
+.up{color:var(--warn)}.dn{color:var(--good)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip.ok{background:var(--good-soft);color:var(--good)}.chip.warn{background:var(--warn-soft);color:var(--warn)}.chip.crit{background:var(--crit-soft);color:var(--crit)}.chip.info{background:var(--accent-soft);color:var(--accent)}
+.chip.plain::before{display:none}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.btn.primary:hover{color:var(--accent-ink);filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn:disabled,input:disabled,select:disabled{opacity:.5;cursor:not-allowed}
+.seg{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:4px 11px;border-radius:6px;cursor:pointer;color:var(--muted);font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+input[type=text],input[type=number],select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0;max-width:100%}
+input[type=number]{width:84px;font-family:var(--f-mono)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-weight:500;color:var(--muted)}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chk{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.widgetbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tw{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr[data-act]{cursor:pointer}
+tbody tr[data-act]:hover td{background:var(--surface2)}
+tr.sel td{background:var(--accent-soft)!important}
+.mono{font-family:var(--f-mono)}
+.muted{color:var(--muted)}.small{font-size:12px}
+.bar{display:inline-block;height:6px;border-radius:3px;background:var(--accent);vertical-align:middle;margin-right:8px;min-width:2px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font:11px var(--f-mono)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .lbl{fill:var(--ink);font:12px var(--f-body)}
+.halo{paint-order:stroke;stroke:var(--surface);stroke-width:3px}
+.tip{position:absolute;top:8px;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);z-index:2;white-space:nowrap}
+.tip b{font-family:var(--f-mono);font-weight:500}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.legend{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px}
+.legend button{border:0;background:transparent;cursor:pointer;display:inline-flex;align-items:center;padding:2px 0;color:var(--ink)}
+.legend button[aria-pressed="false"]{opacity:.4;text-decoration:line-through}
+.site{display:flex;flex-direction:column;gap:6px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.site:hover{border-color:var(--accent)}
+.site .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.site .big{font:700 26px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.site .big i{font:500 12px var(--f-mono);font-style:normal;color:var(--muted);margin-left:4px}
+.alist{display:flex;flex-direction:column}
+.alist>div{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.alist>div:last-child{border-bottom:0}
+.alist .t{flex:1;min-width:0}
+.alist .t b{display:block;font-weight:600}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.kv div{background:var(--surface2);border-radius:8px;padding:8px 10px}
+.kv small{display:block;color:var(--muted);font-size:11px}
+.kv b{font:500 15px var(--f-mono);font-variant-numeric:tabular-nums}
+.kv b i{font-style:normal;font-size:11px;color:var(--muted);margin-left:3px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.sw{appearance:none;width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;margin:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw:checked{background:var(--accent)}.sw:checked::after{transform:translateX(14px)}
+.rule{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.rule:last-of-type{border-bottom:0}
+.rule .f{grid-column:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.meter{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--accent)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.form input,.form select{width:100%;color:var(--ink)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:20;max-width:calc(100% - 32px)}
+.toast[hidden]{display:none}
+.csv{font:12px/1.5 var(--f-mono);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:200px;white-space:pre;margin:0}
+
+.split2{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.mapwrap{overflow-x:auto;border-radius:8px;border:1px solid var(--line)}
+.mapwrap svg{display:block;width:100%;min-width:640px;height:auto}
+.mk{cursor:grab}.mk:active{cursor:grabbing}
+.mk:focus-visible{outline:none}.mk:focus-visible circle:nth-last-of-type(1){stroke-width:6}
+.maplbl{paint-order:stroke;stroke:var(--land);stroke-width:4px;fill:var(--ink);font:600 12px var(--f-body)}
+.mapsub{paint-order:stroke;stroke:var(--land);stroke-width:4px;fill:var(--muted);font:500 11px var(--f-mono)}
+.flow{stroke-dasharray:7 9;animation:flow 1.4s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-32}}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 2s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.8);opacity:.55}100%{transform:scale(1.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){.flow,.pulse{animation:none}}
+.cell{min-width:40px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font:500 11px var(--f-mono);background:var(--surface2);color:var(--muted)}
+.cell.ok{background:var(--good-soft);color:var(--good)}.cell.warn{background:var(--warn-soft);color:var(--warn)}.cell.info{background:var(--accent-soft);color:var(--accent)}.cell.crit{background:var(--crit-soft);color:var(--crit)}
+.tl{display:flex;overflow-x:auto;padding-bottom:6px}
+.tl>div{flex:1;min-width:96px;text-align:center;position:relative;padding-top:24px;font-size:12px;line-height:1.35}
+.tl>div::before{content:"";position:absolute;top:7px;left:0;right:0;height:3px;background:var(--line)}
+.tl>div::after{content:"";position:absolute;top:0;left:calc(50% - 8px);width:16px;height:16px;border-radius:50%;background:var(--surface);border:3px solid var(--line)}
+.tl .done::before{background:var(--accent)}.tl .done::after{background:var(--accent);border-color:var(--accent)}
+.tl .next::after{border-color:var(--warn);background:var(--warn-soft)}
+@media (max-width:980px){
+  .app{grid-template-columns:minmax(0,1fr);gap:12px}
+  .side{position:static;max-height:none;flex-direction:row;align-items:center;padding:8px;gap:8px;overflow-x:auto}
+  .brand span,.sidefoot,.nav .sep{display:none}
+  .nav{flex-direction:row;gap:2px}.nav a{padding:7px 10px;white-space:nowrap}
+  .g-2,.g-al,.split,.split2{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){h1{font-size:22px}.kpi b{font-size:26px}.card{padding:12px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" style="fill:var(--accent)"/><path d="M6 22c3 0 3-6 6-6s3 8 6 8 3-12 6-12 2 6 4 6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><b>EnerPort SME</b><span>Port d'Agadir · ISO 50001</span></div>
+    </div>
+    <nav class="nav" id="nav" aria-label="Navigation principale"></nav>
+    <div class="sidefoot">Maquette interactive du système de monitoring énergétique. Mesures simulées.</div>
+  </aside>
+  <main>
+    <div class="top">
+      <div><h1 id="title"></h1><p id="sub"></p></div>
+      <div class="ctrl">
+        <span class="chip ok" id="clock">En direct</span>
+        <label class="small muted" for="role">Profil</label>
+        <select id="role" aria-label="Profil de démonstration"></select>
+        <button class="btn" id="theme" type="button" aria-label="Changer de thème">Thème</button>
+      </div>
+    </div>
+    <div id="view" class="stack" style="gap:16px"></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- utilitaires ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const fmt=(n,d=0)=>Number(n).toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const sgn=(n,d=1)=>(n>0?'+':n<0?'−':'')+fmt(Math.abs(n),d);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MS=864e5, NOW=Date.now();
+const loc=t=>t-new Date(t).getTimezoneOffset()*60000;
+const dayOf=t=>Math.floor(loc(t)/MS), hourOf=t=>(loc(t)%MS)/36e5;
+const TODAY=dayOf(NOW);
+const dayT=d=>{const x=d*MS;return x+new Date(x).getTimezoneOffset()*60000};
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const dm=t=>{const d=new Date(t);return pad(d.getDate())+'/'+pad(d.getMonth()+1)};
+const dmy=t=>dm(t)+'/'+new Date(t).getFullYear();
+const dow=['dim','lun','mar','mer','jeu','ven','sam'];
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+const sum=a=>a.reduce((s,x)=>s+x,0);
+function rnd(s){let t=(s+0x6D2B79F5)|0;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}
+const nz=(a,b)=>rnd(Math.imul(a|0,7919)+Math.imul(b|0,104729))-.5;
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+
+/* ---------- modèle de données (simulé) ---------- */
+const SPEC=[
+ {id:'Y',mean:520,drift:.99,rec:12,sec:[['ECL','Éclairage',.08],['GE','Groupe électrogène',.01]],nn:8,ns:.70},
+ {id:'X',mean:430,drift:1,rec:11,sec:[['ECL','Éclairage',.07],['BAT','Bâtiments',.06]],nn:6,ns:.68},
+ {id:'Z',mean:380,drift:1.06,rec:10,sec:[['ECL','Éclairage',.08],['GE','Groupe électrogène',.01]],nn:6,ns:.70},
+ {id:'4',mean:340,drift:.98,rec:10,sec:[['ECL','Éclairage',.07],['BAT','Bâtiments',.06]],nn:6,ns:.66},
+ {id:'1',mean:460,drift:1.01,rec:12,exist:true,sec:[['ECL','Éclairage',.07],['BAT','Bâtiments',.06],['GE','Groupe électrogène',.01]],nn:7,ns:.68},
+ {id:'7',mean:120,drift:.96,rec:4,sec:[['ECL','Éclairage',.22],['BAT','Bâtiments',.50]],nn:0,ns:0}];
+const CAL=[63,100,160,250,400,630,800,1000,1250,1600,2000];
+const tcFor=p0=>{const i=p0*1.5*1000/(1.732*400*.9)*1.25;return CAL.find(c=>c>=i)||2000};
+let N=0;
+const POSTES=SPEC.map((s,i)=>{
+  const p={...s,i,name:'PT '+s.id,color:'var(--c'+(i+1)+')',points:[]};
+  const mk=(short,label,kind,share,cls)=>{const n=++N;
+    const pt={id:s.id+'-'+short,short,label,kind,share,poste:p,n,p0:s.mean*share,cls:s.exist?'MEIER CMM61':cls,exist:!!s.exist,
+      pf:.88+.09*rnd(n*3),thdU:1.6+1.6*rnd(n*5),thdI:(kind==='niche'?7:4)+5*rnd(n*7),status:'ok',
+      ip:'10.24.'+(10+i)+'.'+(10+p.points.length),unit:p.points.length+1};
+    pt.tc=s.exist?null:tcFor(pt.p0);p.points.push(pt);return pt};
+  mk('T1','TGBT T1','tgbt',.52,'0,5S');mk('T2','TGBT T2','tgbt',.48,'0,5S');
+  s.sec.forEach(([sh,lb,sr])=>mk(sh,lb,'sec',sr,'0,5S'));
+  for(let k=1;k<=s.nn;k++)mk('N'+k,'Niche multiprises N'+k,'niche',s.ns/s.nn,'0,2S');
+  return p});
+const PTS=POSTES.flatMap(p=>p.points);
+const byId=id=>PTS.find(x=>x.id===id);
+const OFF=byId('4-N3');OFF.status='off';OFF.offSince=NOW-9.4*36e5;
+const THD=byId('Z-N2');THD.status='warn';THD.thdI=17.8;
+const PF=byId('X-T2');PF.status='warn';PF.pf=.86;
+const KIND={tgbt:'Départ TGBT',sec:'Départ secondaire',niche:'Niche multiprises'};
+/* Localisation schématique et maintenance : valeurs illustratives, à remplacer par les données réelles de la DEPA */
+const LOC0={Y:{x:610,y:262,zone:'Jetée est'},X:{x:410,y:360,zone:'Quai de commerce'},Z:{x:250,y:275,zone:'Jetée ouest'},'4':{x:560,y:450,zone:'Zone logistique'},'1':{x:830,y:370,zone:'Terminal est'},'7':{x:110,y:400,zone:'Zone ouest'}};
+const LOCS=JSON.parse(JSON.stringify(LOC0));
+{const sv=store('enerport.loc');if(sv)Object.keys(LOCS).forEach(k=>{if(sv[k])Object.assign(LOCS[k],sv[k])})}
+const RECEP=TODAY-250;
+const visDate=(p,k)=>RECEP+90*k+p.i*2;
+const HW=['État physique des équipements, armoires et coffrets','Serrage et état des connexions électriques','État des transformateurs de courant (TC)','Alimentation auxiliaire des appareils','Communication : routeurs, commutateurs, câblage','Indice de protection IP65 et étanchéité','Mise à la terre et protections électriques','Recherche de points chauds sur les connexions'];
+const SW=['Continuité de la remontée des données par poste','Synchronisation horaire (NTP)','Espace de stockage et sauvegardes automatisées','Alertes et notifications (test d\'un scénario)','Mises à jour de sécurité du système et de la plateforme','Droits d\'accès et comptes utilisateurs actifs','Cohérence du calcul des IPE et de la SER','Génération et diffusion des rapports automatiques'];
+const HWW={Z:[1,7],'4':[4],'1':[0]};
+const SWW=[4,5];
+const hwOk=(p,i)=>!(HWW[p.id]||[]).includes(i);
+function mstate(p){
+  const done=range(1,8).filter(k=>visDate(p,k)<=TODAY),last=done.length?visDate(p,done[done.length-1]):null;
+  const next=done.length<8?visDate(p,done.length+1):null;
+  if(p.id==='4')return{cls:'crit',label:'Intervention en cours',last,next,done:done.length};
+  if(p.id==='Z')return{cls:'warn',label:'Réserves à lever',last,next,done:done.length};
+  const dd=next-TODAY;
+  return{cls:dd<=30?'info':'ok',label:dd<=30?'Visite dans '+dd+' j':'À jour',last,next,done:done.length};
+}
+const qualState=p=>{const off=p.points.filter(x=>x.status==='off').length,wr=p.points.filter(x=>x.status==='warn').length;
+  return off?{cls:'crit',label:'Point hors ligne'}:wr?{cls:'warn',label:wr+' point à surveiller'}:{cls:'ok',label:'Conforme'}};
+const INTER=[
+ {id:'I-014',p:'PT 4',obj:'Perte de communication · Niche multiprises N3',t:OFF.offSince,due:OFF.offSince+7*MS,kind:'Corrective non bloquante',st:'En cours'},
+ {id:'I-013',p:'PT Z',obj:'Contrôle thermographique des connexions',t:dayT(TODAY-70)+9*36e5,due:null,kind:'Réserve de la visite 2',st:'Planifiée'},
+ {id:'I-012',p:'PT 7',obj:'Remplacement d\'une alimentation 24 V',t:dayT(TODAY-95)+10*36e5,due:null,kind:'Corrective',st:'Clôturée'}];
+const SPARES=[['Centrale de mesure classe 0,5S',2,2],['Centrale de mesure classe 0,2S',3,3],['TC ouvrable 630/5A',4,4],['Commutateur industriel',1,1],['Alimentation 24 V',0,1]];
+
+
+const prof=h=>1+.22*Math.sin(2*Math.PI*(h-8)/24)+.10*Math.sin(4*Math.PI*(h-6)/24);
+const act=d=>{const w=(d+4)%7,k=w===0?.78:w===6?.92:1;return Math.round((10000+2800*Math.sin(d/3.1)+2600*nz(d,11))*k/10)*10};
+const fct=d=>.55+.45*act(d)/10000;
+const drift=(p,d)=>1+(p.drift-1)*Math.min(1,Math.max(0,(d-(TODAY-40))/10));
+function ptPower(pt,t){
+  if(pt.status==='off'&&t>pt.offSince)return null;
+  const d=dayOf(t),h=hourOf(t);
+  return pt.p0*prof(h)*fct(d)*drift(pt.poste,d)*(1+.07*nz(pt.n,Math.floor(t/9e5)));
+}
+const tg=p=>p.points.filter(x=>x.kind==='tgbt');
+const pPower=(p,t)=>sum(tg(p).map(x=>ptPower(x,t)||0));
+const allPower=t=>sum(POSTES.map(p=>pPower(p,t)));
+const dayE=(p,d)=>p.mean*24*fct(d)*(1+.07*nz(p.i+1,d+500))*drift(p,d);
+const ptDayE=(pt,d)=>pt.p0*24*fct(d)*drift(pt.poste,d)*(1+.03*nz(pt.n,d+900));
+function live(pt,t){
+  const P=ptPower(pt,t);
+  if(P===null)return null;
+  const U=400*(1+.012*nz(pt.n,Math.floor(t/3e4)));
+  const pf=Math.min(.99,pt.pf*(1+.01*nz(pt.n,Math.floor(t/6e4)+7)));
+  const I=P*1000/(1.732*U*pf);
+  const Q=P*Math.tan(Math.acos(pf));
+  return{P,U,I,pf,Q,S:P/pf,thdU:pt.thdU*(1+.05*nz(pt.n,Math.floor(t/6e4)+1)),thdI:pt.thdI*(1+.04*nz(pt.n,Math.floor(t/6e4)+2))};
+}
+function spectrum(pt,kind){
+  const thd=kind==='U'?pt.thdU:pt.thdI;const w=[];let ss=0;
+  for(let r=2;r<=40;r++){
+    let x=r%2?(r===3?1:r===5?.85:r===7?.6:r===11?.42:r===13?.32:Math.max(.04,1.6/r)):.06/(r/2);
+    x*=.85+.3*rnd(pt.n*100+r+(kind==='U'?1000:0));w.push(x);ss+=x*x}
+  const s=thd/Math.sqrt(ss);return w.map(x=>x*s);
+}
+function sags(pt){
+  const o=[];for(let k=0;k<3;k++)o.push({t:NOW-(k+1)*(1.5+6*rnd(pt.n*17+k))*36e5*5,depth:Math.round(10+22*rnd(pt.n*13+k)),ms:Math.round(40+260*rnd(pt.n*11+k))});
+  return o.sort((a,b)=>b.t-a.t);
+}
+/* Régression linéaire et situation énergétique de référence */
+function fit(xs,ys){const n=xs.length,mx=sum(xs)/n,my=sum(ys)/n;let sxy=0,sxx=0,syy=0;
+  xs.forEach((x,i)=>{sxy+=(x-mx)*(ys[i]-my);sxx+=(x-mx)**2;syy+=(ys[i]-my)**2});
+  const b=sxy/sxx,a=my-b*mx;return{a,b,r2:sxy*sxy/(sxx*syy)}}
+const REF=range(TODAY-100,TODAY-41),REP=range(TODAY-29,TODAY-1);
+const pcache={};
+function perf(sel){
+  if(pcache[sel])return pcache[sel];
+  const ps=sel==='all'?POSTES:[POSTES.find(p=>p.id===sel)];
+  const E=d=>sum(ps.map(p=>dayE(p,d)));
+  const f=fit(REF.map(act),REF.map(E));
+  const exp=d=>f.a+f.b*act(d);
+  const actual=sum(REP.map(E)),expected=sum(REP.map(exp));
+  let c=0;const cusum=REP.map(d=>(c+=E(d)-exp(d)));
+  const ipe=actual/sum(REP.map(act)),ipeRef=sum(REF.map(E))/sum(REF.map(act));
+  return pcache[sel]={f,actual,expected,gap:(actual-expected)/expected*100,ipe,ipeRef,ipeVar:(ipe/ipeRef-1)*100,cusum,
+    sRef:REF.map(d=>({x:act(d),y:E(d)})),sRep:REP.map(d=>({x:act(d),y:E(d)}))};
+}
+
+/* ---------- état de l'interface ---------- */
+const ROLES={
+  admin:{label:'Administrateur',edit:true,ack:true,adm:true,exp:true,w:{kpi:1,chart:1,sites:1,alerts:1}},
+  energie:{label:'Gestionnaire énergie',edit:true,ack:true,adm:false,exp:true,w:{kpi:1,chart:1,sites:1,alerts:1}},
+  operateur:{label:'Opérateur',edit:false,ack:true,adm:false,exp:true,w:{kpi:1,chart:1,sites:1,alerts:1}},
+  lecteur:{label:'Lecteur',edit:false,ack:false,adm:false,exp:false,w:{kpi:1,chart:0,sites:1,alerts:0}}};
+const USERNAME={admin:'admin.depa',energie:'energie.01',operateur:'exploit.02',lecteur:'lecteur.03'};
+const S={view:'supervision',layer:'power',msel:'Y',bg:null,role:'admin',poste:'Y',pt:'Y-T1',period:'24h',mode:'postes',hidden:{},perfSel:'all',anaP:7,alF:'all',repT:'daily',spec:'I',cust:false,widgets:{...ROLES.admin.w},dirty:false,audit:'' };
+const can=k=>ROLES[S.role][k];
+const savedW=store('enerport.widgets');if(savedW)Object.assign(S.widgets,savedW);
+
+const RULES=[
+ {id:'surch',label:'Surcharge d\'un départ TGBT',unit:'% du calibre TC',v:85,ch:'Les deux',on:true},
+ {id:'peak',label:'Pointe 15 min d\'un poste',unit:'kW',v:600,ch:'Tableau de bord',on:true},
+ {id:'pf',label:'Facteur de puissance minimal',unit:'cos φ',v:.9,ch:'Les deux',on:true,step:.01},
+ {id:'thdu',label:'Distorsion harmonique en tension',unit:'THD-U %',v:8,ch:'Tableau de bord',on:true},
+ {id:'thdi',label:'Distorsion harmonique en courant',unit:'THD-I %',v:15,ch:'Tableau de bord',on:true},
+ {id:'sag',label:'Creux de tension (profondeur)',unit:'%',v:10,ch:'Les deux',on:true},
+ {id:'ser',label:'Dérive de consommation vs SER',unit:'± %',v:5,ch:'Les deux',on:true},
+ {id:'comm',label:'Perte de communication',unit:'minutes',v:10,ch:'Les deux',on:true}];
+const ALERTS=[
+ {id:1,sev:'crit',title:'Perte de communication Modbus TCP',where:'PT 4 · Niche multiprises N3',detail:'Aucune trame reçue. Les données sont conservées dans la mémoire Flash de la centrale.',t:OFF.offSince,st:'Active',sla:'Intervention sous 7 jours (art. 47.4)'},
+ {id:2,sev:'warn',title:'Distorsion harmonique en courant élevée',where:'PT Z · Niche multiprises N2',detail:'THD-I à 17,8 % pour un seuil de 15 %.',t:NOW-2.1*36e5,st:'Active'},
+ {id:3,sev:'warn',title:'Dérive de consommation par rapport au SER',where:'PT Z · poste',detail:'Consommation 30 jours supérieure à la valeur attendue pour l\'activité portuaire.',t:NOW-5.5*36e5,st:'Active'},
+ {id:4,sev:'warn',title:'Facteur de puissance sous le minimum',where:'PT X · TGBT T2',detail:'cos φ à 0,86 pour un minimum de 0,90.',t:NOW-7.8*36e5,st:'Acquittée'},
+ {id:5,sev:'warn',title:'Pointe de puissance sur 15 minutes',where:'PT Y · poste',detail:'612 kW relevés pour un seuil de 600 kW.',t:NOW-26*36e5,st:'Résolue'},
+ {id:6,sev:'info',title:'Creux de tension détecté',where:'PT 7 · TGBT T1',detail:'Profondeur 14 %, durée 120 ms.',t:NOW-31*36e5,st:'Acquittée'},
+ {id:7,sev:'info',title:'Désynchronisation horaire NTP corrigée',where:'Serveur de la plateforme',detail:'Décalage de 2,1 s ramené à 12 ms.',t:NOW-52*36e5,st:'Résolue'}];
+const AUDIT=[
+ {t:NOW-3.2*36e5,u:'admin.depa',a:'Connexion',o:'Annuaire Active Directory'},
+ {t:NOW-20*36e5,u:'energie.01',a:'Modification de seuil',o:'THD-I : 12 % → 15 %'},
+ {t:NOW-29*36e5,u:'exploit.02',a:'Acquittement',o:'Alerte PT Y · pointe 15 min'},
+ {t:NOW-47*36e5,u:'admin.depa',a:'Création de compte',o:'lecteur.03 (profil Lecteur)'},
+ {t:NOW-70*36e5,u:'energie.01',a:'Paramétrage IPE',o:'IPE kWh/t · PT Z'}];
+function log(a,o){AUDIT.unshift({t:Date.now(),u:USERNAME[S.role],a,o})}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+function copy(text,msg){
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();toast(msg)};
+  try{navigator.clipboard.writeText(text).then(()=>toast(msg),fb)}catch(e){fb()}
+}
+
+/* ---------- graphiques (SVG dessinés à la largeur du conteneur) ---------- */
+const ro=new ResizeObserver(es=>es.forEach(e=>e.target._draw&&e.target._draw()));
+function mount(el,fn){el._draw=fn;ro.observe(el);fn()}
+function niceTicks(lo,hi,n=5){const span=hi-lo||1,s0=span/n,mag=Math.pow(10,Math.floor(Math.log10(s0))),r=s0/mag;
+  const st=(r<1.5?1:r<3?2:r<7?5:10)*mag,a=Math.floor(lo/st)*st,b=Math.ceil(hi/st)*st,t=[];
+  for(let v=a;v<=b+st/2;v+=st)t.push(+v.toFixed(10));return t}
+function lineChart(el,o){
+  mount(el,()=>{
+    const W=Math.max(280,el.clientWidth),H=o.h||260,m={l:50,r:14,t:12,b:26};
+    const vis=o.series.filter(s=>!s.hidden),n=o.series[0].pts.length;
+    let lo=0,hi=-Infinity;
+    vis.forEach(s=>s.pts.forEach(p=>{if(p.v<lo)lo=p.v;if(p.v>hi)hi=p.v}));
+    if(!isFinite(hi))hi=1;
+    const tk=niceTicks(lo,hi,4),y0=tk[0],y1=tk[tk.length-1];
+    const iw=W-m.l-m.r,ih=H-m.t-m.b;
+    const X=i=>m.l+i*iw/(n-1),Y=v=>m.t+ih-(v-y0)/(y1-y0)*ih;
+    let g=tk.map(v=>`<line class="gl" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-7}" y="${Y(v)+4}" text-anchor="end">${fmt(v,v%1?1:0)}</text>`).join('');
+    const nt=Math.max(3,Math.floor(iw/90));
+    for(let k=0;k<nt;k++){const i=Math.round(k*(n-1)/(nt-1));g+=`<text x="${X(i)}" y="${H-7}" text-anchor="${k===0?'start':k===nt-1?'end':'middle'}">${o.xfmt(o.series[0].pts[i].t)}</text>`}
+    if(o.zero&&y0<0)g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(0)}" y2="${Y(0)}" style="stroke:var(--muted)" stroke-dasharray="4 3"/>`;
+    vis.forEach(s=>{
+      const d=s.pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(p.v).toFixed(1)).join('');
+      if(vis.length===1&&!o.zero)g+=`<path d="${d}L${X(n-1)},${Y(y0)}L${X(0)},${Y(y0)}Z" style="fill:${s.color};opacity:.12"/>`;
+      g+=`<path d="${d}" fill="none" style="stroke:${s.color}" stroke-width="${s.w||1.8}" stroke-linejoin="round"/>`;
+      const lp=s.pts[n-1];g+=`<circle cx="${X(n-1)}" cy="${Y(lp.v)}" r="3.2" style="fill:${s.color}"/>`;
+    });
+    g+=`<line id="xh" y1="${m.t}" y2="${m.t+ih}" style="stroke:var(--muted)" stroke-dasharray="3 3" visibility="hidden"/><rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="ov"/>`;
+    el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(o.label||'Graphique')}">${g}</svg><div class="tip" hidden></div>`;
+    const tip=$('.tip',el),xh=$('#xh',el);
+    $('#ov',el).addEventListener('pointermove',e=>{
+      const r=e.currentTarget.getBoundingClientRect();
+      const i=Math.max(0,Math.min(n-1,Math.round((e.clientX-r.left)/r.width*(n-1))));
+      xh.setAttribute('x1',X(i));xh.setAttribute('x2',X(i));xh.setAttribute('visibility','visible');
+      tip.hidden=false;
+      tip.innerHTML=`<div class="muted">${o.tfmt(o.series[0].pts[i].t)}</div>`+vis.map(s=>`<div><span class="dot" style="background:${s.color}"></span>${esc(s.name)} <b>${fmt(s.pts[i].v,o.dec||0)} ${o.unit}</b></div>`).join('');
+      const tw=tip.offsetWidth;tip.style.left=Math.max(4,Math.min(W-tw-4,X(i)+12))+'px';
+    });
+    $('#ov',el).addEventListener('pointerleave',()=>{tip.hidden=true;xh.setAttribute('visibility','hidden')});
+  });
+}
+function spark(vals,color,w=220,h=38){
+  const lo=Math.min(...vals),hi=Math.max(...vals),n=vals.length;
+  const X=i=>i*w/(n-1),Y=v=>h-3-(v-lo)/(hi-lo||1)*(h-8);
+  const d=vals.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1)).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}L${w},${h}L0,${h}Z" style="fill:${color};opacity:.12"/><path d="${d}" fill="none" style="stroke:${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${X(n-1)}" cy="${Y(vals[n-1])}" r="2.6" style="fill:${color}"/></svg>`;
+}
+function scatter(el,o){
+  mount(el,()=>{
+    const W=Math.max(280,el.clientWidth),H=o.h||290,m={l:56,r:14,t:12,b:38};
+    const all=[...o.ref,...o.rep];
+    const xt=niceTicks(Math.min(...all.map(p=>p.x))*.95,Math.max(...all.map(p=>p.x))*1.03,4);
+    const yt=niceTicks(Math.min(...all.map(p=>p.y))*.95,Math.max(...all.map(p=>p.y))*1.03,4);
+    const iw=W-m.l-m.r,ih=H-m.t-m.b;
+    const X=v=>m.l+(v-xt[0])/(xt[xt.length-1]-xt[0])*iw,Y=v=>m.t+ih-(v-yt[0])/(yt[yt.length-1]-yt[0])*ih;
+    let g=yt.map(v=>`<line class="gl" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-7}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`).join('');
+    g+=xt.map(v=>`<text x="${X(v)}" y="${H-20}" text-anchor="middle">${fmt(v)}</text>`).join('');
+    g+=`<text x="${m.l+iw/2}" y="${H-3}" text-anchor="middle">${o.xl}</text>`;
+    g+=o.ref.map(p=>`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3" style="fill:var(--accent);opacity:.55"/>`).join('');
+    g+=o.rep.map(p=>`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.4" style="fill:var(--warn);stroke:var(--surface)" stroke-width="1"/>`).join('');
+    const xa=xt[0],xb=xt[xt.length-1];
+    g+=`<line x1="${X(xa)}" y1="${Y(o.f.a+o.f.b*xa)}" x2="${X(xb)}" y2="${Y(o.f.a+o.f.b*xb)}" style="stroke:var(--ink)" stroke-width="1.6"/>`;
+    el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Régression énergie en fonction de l'activité">${g}</svg>`;
+  });
+}
+function harm(el,o){
+  mount(el,()=>{
+    const W=Math.max(280,el.clientWidth),H=210,m={l:42,r:10,t:10,b:26};
+    const vals=o.vals,mx=Math.max(...vals,o.limit*1.15),tk=niceTicks(0,mx,4),yt=tk[tk.length-1];
+    const iw=W-m.l-m.r,ih=H-m.t-m.b,bw=iw/vals.length;
+    const Y=v=>m.t+ih-v/yt*ih;
+    let g=tk.map(v=>`<line class="gl" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v,v%1?1:0)}</text>`).join('');
+    g+=vals.map((v,i)=>`<rect x="${m.l+i*bw+1}" y="${Y(v)}" width="${Math.max(2,bw-2)}" height="${m.t+ih-Y(v)}" rx="1.5" style="fill:${(i+2)%2?'var(--accent)':'var(--c6)'}"><title>Rang ${i+2} : ${fmt(v,2)} %</title></rect>`).join('');
+    [2,5,10,15,20,25,30,35,40].forEach(r=>{g+=`<text x="${m.l+(r-2)*bw+bw/2}" y="${H-8}" text-anchor="middle">${r}</text>`});
+    g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(o.limit)}" y2="${Y(o.limit)}" style="stroke:var(--crit)" stroke-dasharray="5 3"/><text x="${W-m.r}" y="${Y(o.limit)-4}" text-anchor="end" style="fill:var(--crit)">${o.lim}</text>`;
+    el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Spectre harmonique rangs 2 à 40">${g}</svg>`;
+  });
+}
+function pareto(el,o){
+  mount(el,()=>{
+    const W=Math.max(300,el.clientWidth),H=300,m={l:54,r:44,t:14,b:34},narrow=W<520;
+    const all=o.items,tot=sum(all.map(x=>x.v)),show=all.slice(0,narrow?10:15);
+    let c=0;const cum=all.map(x=>(c+=x.v)/tot*100);
+    const tk=niceTicks(0,show[0].v,4),ymax=tk[tk.length-1];
+    const iw=W-m.l-m.r,ih=H-m.t-m.b,bw=iw/show.length;
+    const Y=v=>m.t+ih-v/ymax*ih,Yp=v=>m.t+ih-v/100*ih;
+    let g=tk.map(v=>`<line class="gl" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`).join('');
+    [0,50,100].forEach(v=>g+=`<text x="${W-m.r+6}" y="${Yp(v)+4}">${v} %</text>`);
+    g+=show.map((x,i)=>{const before=i?cum[i-1]:0;return `<rect x="${m.l+i*bw+3}" y="${Y(x.v)}" width="${bw-6}" height="${m.t+ih-Y(x.v)}" rx="2" style="fill:${before<80?'var(--accent)':'var(--c6)'}"><title>${esc(x.full)} : ${fmt(x.v)} kWh (cumul ${fmt(cum[i],1)} %)</title></rect><text x="${m.l+i*bw+bw/2}" y="${H-16}" text-anchor="middle" style="font-size:${narrow?9:10.5}px">${x.label}</text>`}).join('');
+    g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Yp(80)}" y2="${Yp(80)}" style="stroke:var(--warn)" stroke-dasharray="5 3"/><text x="${m.l+4}" y="${Yp(80)-4}" style="fill:var(--warn)">80 %</text>`;
+    g+=`<path d="${show.map((x,i)=>(i?'L':'M')+(m.l+i*bw+bw/2).toFixed(1)+','+Yp(cum[i]).toFixed(1)).join('')}" fill="none" style="stroke:var(--ink)" stroke-width="1.6"/>`;
+    g+=show.map((x,i)=>`<circle cx="${m.l+i*bw+bw/2}" cy="${Yp(cum[i])}" r="2.8" style="fill:var(--ink)"/>`).join('');
+    el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Diagramme de Pareto des départs">${g}</svg>`;
+  });
+}
+function sankey(el,o){
+  mount(el,()=>{
+    const W=Math.max(300,el.clientWidth),H=o.h,nar=W<520,mL=nar?60:86,mR=nar?116:156,nw=12,gap=nar?8:12,tp=6;
+    const xs=[mL,mL+(W-mL-mR-nw)/2,W-mR-nw];
+    const nodes=o.nodes.map(n=>({...n,in:0,out:0}));const nb={};nodes.forEach(n=>nb[n.id]=n);
+    o.links.forEach(l=>{nb[l.s].out+=l.v;nb[l.t].in+=l.v});
+    nodes.forEach(n=>n.val=Math.max(n.in,n.out));
+    const cols=[0,1,2].map(c=>nodes.filter(n=>n.col===c));
+    const k=Math.min(...cols.map(c=>(H-2*tp-gap*(c.length-1))/sum(c.map(n=>n.val))));
+    cols.forEach((c,ci)=>{let y=tp+(H-2*tp-(sum(c.map(n=>n.val))*k+gap*(c.length-1)))/2;c.forEach(n=>{n.x=xs[ci];n.y=y;n.h=n.val*k;y+=n.h+gap;n.so=0;n.ti=0})});
+    const ls=o.links.map(l=>({...l,a:nb[l.s],b:nb[l.t]}));
+    nodes.forEach(n=>{ls.filter(l=>l.a===n).sort((p,q)=>p.b.y-q.b.y).forEach(l=>{l.y0=n.y+n.so;n.so+=l.v*k});
+      ls.filter(l=>l.b===n).sort((p,q)=>p.a.y-q.a.y).forEach(l=>{l.y1=n.y+n.ti;n.ti+=l.v*k})});
+    let g='';
+    ls.forEach(l=>{const th=Math.max(1,l.v*k),x0=l.a.x+nw,x1=l.b.x,xm=(x0+x1)/2,ya=l.y0+th/2,yb=l.y1+th/2;
+      g+=`<path d="M${x0},${ya} C${xm},${ya} ${xm},${yb} ${x1},${yb}" fill="none" style="stroke:${l.color};opacity:.38" stroke-width="${th}"><title>${esc(l.a.label)} → ${esc(l.b.label)} : ${fmt(l.v)} kWh</title></path>`});
+    const total=sum(o.links.filter(l=>nb[l.s].col===0).map(l=>l.v));
+    nodes.forEach(n=>{
+      g+=`<rect x="${n.x}" y="${n.y}" width="${nw}" height="${Math.max(2,n.h)}" rx="2" style="fill:${n.color}"/>`;
+      const cy=n.y+n.h/2+4;
+      if(n.col===0)g+=`<text class="lbl" x="${n.x-7}" y="${cy}" text-anchor="end">${n.label}</text>`;
+      else if(n.col===1)g+=`<text class="lbl halo" x="${n.x+nw+6}" y="${cy}">${n.label}</text>`;
+      else g+=`<text class="lbl" x="${n.x+nw+7}" y="${cy-(nar?0:0)}">${n.label} · ${fmt(n.val/total*100)} %</text>`;
+    });
+    el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Diagramme de Sankey : du réseau aux postes puis aux usages">${g}</svg>`;
+  });
+}
+
+/* ---------- vues ---------- */
+const ICON={
+ supervision:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+ postes:'M13 2 4 14h7l-1 8 9-12h-7z',
+ performance:'M3 17l6-6 4 4 8-8M15 7h6v6',
+ analyses:'M4 4v16h16M8 16v-6M13 16V6M18 16v-4',
+ alertes:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0',
+ rapports:'M6 2h9l5 5v15H6zM14 2v6h6M9 13h7M9 17h7',
+ administration:'M4 6h16M4 12h16M4 18h16M9 4v4M15 10v4M8 16v4',
+ conformite:'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9',
+ carte:'M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+ maintenance:'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z'};
+const TITLES={supervision:'Supervision',postes:'Postes et points de comptage',performance:'Performance énergétique',analyses:'Analyses',alertes:'Alertes et seuils',rapports:'Rapports',administration:'Administration',conformite:'Conformité au CPS',carte:'Carte du port',maintenance:'Maintenance'};
+const SUBS={supervision:'Vue d\'ensemble des 6 postes électriques du port d\'Agadir',postes:'Mesures en temps réel, qualité d\'énergie et communication Modbus TCP/IP',performance:'Situation énergétique de référence et indicateurs de performance énergétique (ISO 50001)',analyses:'Répartition des flux et concentration des consommations',alertes:'Notifications configurables et règles de déclenchement',rapports:'Reporting périodique structuré pour la revue énergétique',administration:'Comptes, profils, état du système et journal d\'audit',conformite:'Exigences de l\'appel d\'offres 12/DEPA/2026 et leur couverture dans la maquette',carte:'Localisation des postes, flux d\'énergie et état de chaque site',maintenance:'Visites préventives, contrôles, interventions et garantie de 24 mois'};
+const alertsActive=()=>ALERTS.filter(a=>a.st==='Active');
+const sevChip=s=>`<span class="chip ${s==='crit'?'crit':s==='warn'?'warn':'info'}">${s==='crit'?'Critique':s==='warn'?'Avertissement':'Information'}</span>`;
+const stChip=s=>`<span class="chip ${s==='Active'?'warn':s==='Acquittée'?'info':'ok'} plain">${s}</span>`;
+const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<60?`il y a ${m} min`:m<2880?`il y a ${Math.round(m/60)} h`:`le ${dm(t)}`};
+
+function seriesFor(period,mode){
+  const mk=(name,color,fn,ts)=>({name,color,pts:ts.map(t=>({t,v:fn(t)}))});
+  let ts,fnP;
+  if(period==='24h'){ts=range(0,96).map(i=>Math.floor(NOW/9e5)*9e5-(96-i)*9e5);fnP=(p,t)=>pPower(p,t)}
+  else if(period==='7j'){ts=range(0,168).map(i=>Math.floor(NOW/36e5)*36e5-(168-i)*36e5);fnP=(p,t)=>pPower(p,t)}
+  else{ts=range(TODAY-29,TODAY).map(d=>dayT(d)+12*36e5);fnP=(p,t)=>dayE(p,dayOf(t))/24}
+  if(mode==='total')return[{...mk('Total DEPA','var(--ink)',t=>sum(POSTES.map(p=>fnP(p,t))),ts),w:2.4}];
+  return POSTES.map(p=>({...mk(p.name,p.color,t=>fnP(p,t),ts),hidden:!!S.hidden[p.id]}));
+}
+const XF={'24h':[t=>hm(t),t=>dm(t)+' '+hm(t)],'7j':[t=>dow[new Date(t).getDay()]+' '+pad(new Date(t).getDate()),t=>dow[new Date(t).getDay()]+' '+dm(t)+' '+hm(t)],'30j':[t=>dm(t),t=>dmy(t)]};
+
+function vSupervision(){
+  const W=S.widgets;let h=`<div class="widgetbar"><button class="btn ghost" data-act="cust" type="button">Personnaliser le tableau de bord</button>`;
+  if(S.cust)h+=`<div class="chips">${[['kpi','Indicateurs'],['chart','Courbe de charge'],['sites','Postes'],['alerts','Alertes']].map(([k,l])=>`<label class="chk"><input type="checkbox" data-act="widget" data-k="${k}" ${W[k]?'checked':''}> ${l}</label>`).join('')}</div>`;
+  h+=`</div>`;
+  if(W.kpi){
+    const pa=perf('all'),act_=alertsActive();
+    h+=`<div class="grid g-kpi">
+    <div class="card kpi"><small>Puissance appelée</small><b><span data-live="pw"></span><i>kW</i></b><span data-live="pwd"></span></div>
+    <div class="card kpi"><small>Énergie depuis minuit</small><b><span data-live="en"></span><i>kWh</i></b><span>Cumul des 6 postes, départs TGBT</span></div>
+    <div class="card kpi"><small>IPE sur 30 jours</small><b>${fmt(pa.ipe,2)}<i>kWh/t</i></b><span class="${pa.ipeVar>0?'up':'dn'}">${sgn(pa.ipeVar)} % vs situation de référence</span></div>
+    <div class="card kpi"><small>Alertes actives</small><b>${act_.length}<i>dont ${act_.filter(a=>a.sev==='crit').length} critique</i></b><span><a href="#alertes">Voir les alertes</a></span></div>
+    <div class="card kpi"><small>Points communicants</small><b>57<i>/ 58</i></b><span>98,3 % · 1 point hors ligne</span></div></div>`;
+  }
+  if(W.chart||W.alerts){
+    h+=`<div class="grid ${W.chart&&W.alerts?'g-2':''}">`;
+    if(W.chart)h+=`<section class="card"><header><div><h2>Courbe de charge</h2><p>${S.period==='24h'?'Pas de 15 minutes':S.period==='7j'?'Pas d\'une heure':'Puissance moyenne journalière'} · historisation haute fréquence</p></div>
+      <div class="ctrl"><div class="seg" role="group" aria-label="Période">${['24h','7j','30j'].map(p=>`<button type="button" data-act="period" data-v="${p}" aria-pressed="${S.period===p}">${p==='24h'?'24 h':p==='7j'?'7 jours':'30 jours'}</button>`).join('')}</div>
+      <div class="seg" role="group" aria-label="Affichage">${[['postes','Par poste'],['total','Total']].map(([k,l])=>`<button type="button" data-act="mode" data-v="${k}" aria-pressed="${S.mode===k}">${l}</button>`).join('')}</div></div></header>
+      ${S.mode==='postes'?`<div class="legend" style="margin-bottom:8px">${POSTES.map(p=>`<button type="button" data-act="hide" data-v="${p.id}" aria-pressed="${!S.hidden[p.id]}"><span class="dot" style="background:${p.color}"></span>${p.name}</button>`).join('')}</div>`:''}
+      <div id="ch-load"></div></section>`;
+    if(W.alerts)h+=`<section class="card"><header><h2>Alertes récentes</h2><a href="#alertes" class="small">Tout voir</a></header><div class="alist">${ALERTS.filter(a=>a.st!=='Résolue').slice(0,5).map(a=>`<div>${sevChip(a.sev)}<div class="t"><b>${a.title}</b><span class="muted small">${a.where} · ${ago(a.t)}</span></div></div>`).join('')}</div></section>`;
+    h+=`</div>`;
+  }
+  if(W.sites)h+=`<div class="grid g-sites">${POSTES.map(p=>{
+      const off=p.points.filter(x=>x.status==='off').length,wr=p.points.filter(x=>x.status==='warn').length,ms=mstate(p);
+      const vals=range(0,24).map(i=>pPower(p,NOW-(24-i)*36e5));
+      return `<button type="button" class="card site" data-act="gopost" data-v="${p.id}"><div class="row"><h2>${p.name}</h2><span class="chip ${off?'crit':wr?'warn':'ok'}">${off?'Point hors ligne':wr?'À surveiller':'Normal'}</span></div>
+      <div class="big"><span data-live="pp-${p.id}"></span><i>kW</i></div>${spark(vals,p.color)}
+      <div class="row small muted"><span>${p.points.length-off} / ${p.points.length} points</span><span>${p.exist?'Compteurs existants':'Équipements neufs'}</span></div><div class="row small"><span class="chip ${ms.cls}">${ms.label}</span><span class="muted">${esc(LOCS[p.id].zone)}</span></div></button>`}).join('')}</div>`;
+  return{html:h,after(){if(S.widgets.chart){const[xf,tf]=XF[S.period];lineChart($('#ch-load'),{series:seriesFor(S.period,S.mode),xfmt:xf,tfmt:tf,unit:'kW',label:'Courbe de charge par poste',h:290})}}};
+}
+
+function vPostes(){
+  const p=POSTES.find(x=>x.id===S.poste);if(!p.points.find(x=>x.id===S.pt))S.pt=p.points[0].id;
+  const pt=byId(S.pt),t=Date.now();
+  const nNew=p.exist?0:p.points.length,ms=mstate(p);
+  let h=`<div class="chips" role="group" aria-label="Poste">${POSTES.map(x=>`<button type="button" data-act="poste" data-v="${x.id}" aria-pressed="${x.id===S.poste}">${x.name}</button>`).join('')}</div>`;
+  h+=`<div class="split"><section class="card"><header><div><h2>${p.name} · ${p.points.length} points de comptage actifs</h2><div class="chips" style="margin:6px 0"><span class="chip plain info">${esc(LOCS[p.id].zone)}</span><span class="chip ${ms.cls}">Maintenance : ${ms.label}</span><button type="button" data-act="gomap" data-v="${p.id}">Voir sur la carte</button></div><p>${p.exist?'Système de comptage existant (12 compteurs MEIER CMM61, Modbus TCP/IP), intégré à la plateforme sans nouvel équipement.':`${nNew} centrales de mesure neuves, avec transformateurs de courant ouvrables.`}${p.rec>p.points.length?` ${p.rec} départs recensés dans le CPS (art. 51), ${p.points.length} points instrumentés (art. 47.3).`:''}</p></div></header>
+  <div class="tw"><table><thead><tr><th>Départ</th><th>Type</th><th>Classe</th><th class="n">U (V)</th><th class="n">I (A)</th><th class="n">P (kW)</th><th class="n">cos φ</th><th class="n">THD-I</th><th>TC</th><th>État</th></tr></thead><tbody>
+  ${p.points.map(x=>{const v=live(x,t);return `<tr data-act="pt" data-v="${x.id}" class="${x.id===S.pt?'sel':''}" tabindex="0"><td><b>${x.label}</b></td><td class="muted">${KIND[x.kind]}</td><td class="mono">${x.cls}</td>
+   <td class="n">${v?fmt(v.U):'—'}</td><td class="n">${v?fmt(v.I):'—'}</td><td class="n">${v?fmt(v.P,1):'—'}</td><td class="n">${v?fmt(v.pf,2):'—'}</td><td class="n">${v?fmt(v.thdI,1)+' %':'—'}</td><td class="mono">${x.tc?x.tc+'/5A':'existant'}</td>
+   <td>${x.status==='off'?'<span class="chip crit">Hors ligne</span>':x.status==='warn'?'<span class="chip warn">À surveiller</span>':'<span class="chip ok">En ligne</span>'}</td></tr>`}).join('')}
+  </tbody></table></div></section>`;
+  const v=live(pt,t),dE=sum(range(0,Math.floor(hourOf(t)*4)).map(i=>(ptPower(pt,t-hourOf(t)*36e5+i*9e5)||0)*.25));
+  const sg=sags(pt);
+  h+=`<aside class="card stack"><header style="margin:0"><div><h2>${p.name} · ${pt.label}</h2><p>${KIND[pt.kind]} · classe ${pt.cls}${pt.tc?' · TC split-core '+pt.tc+'/5A':''}</p></div>${pt.status==='off'?'<span class="chip crit">Hors ligne</span>':'<span class="chip ok">En ligne</span>'}</header>
+  <div class="kv">${[['Tension U',v?fmt(v.U):'—','V'],['Courant I',v?fmt(v.I):'—','A'],['Puissance active',v?fmt(v.P,1):'—','kW'],['Puissance réactive',v?fmt(v.Q,1):'—','kvar'],['Puissance apparente',v?fmt(v.S,1):'—','kVA'],['Facteur de puissance',v?fmt(v.pf,2):'—',''],['Énergie du jour',fmt(dE),'kWh'],['THD-U',v?fmt(v.thdU,1):'—','%'],['THD-I',v?fmt(v.thdI,1):'—','%']].map(([a,b,c])=>`<div><small>${a}</small><b>${b}<i>${c}</i></b></div>`).join('')}</div>
+  <div><div class="ctrl" style="justify-content:space-between;margin-bottom:6px"><h3>Spectre harmonique (rangs 2 à 40)</h3><div class="seg" role="group" aria-label="Grandeur"><button type="button" data-act="spec" data-v="I" aria-pressed="${S.spec==='I'}">Courant</button><button type="button" data-act="spec" data-v="U" aria-pressed="${S.spec==='U'}">Tension</button></div></div><div id="ch-harm"></div></div>
+  <div><h3>Creux de tension détectés</h3><div class="alist">${sg.map(s=>`<div><div class="t"><b class="mono">−${s.depth} % · ${s.ms} ms</b><span class="muted small">${dmy(s.t)} à ${hm(s.t)}</span></div></div>`).join('')}</div></div>
+  <div><h3>Communication Modbus TCP/IP</h3><p class="small muted" style="margin:4px 0 0">Adresse <span class="mono">${pt.ip}</span> · identifiant esclave <span class="mono">${pt.unit}</span> · ${pt.exist?'registres cartographiés à l\'intégration (Prix n°2)':'Ethernet RJ45 natif'}.<br>${pt.status==='off'?`Aucune trame depuis ${hm(pt.offSince)}. La mémoire Flash (8 Mo) conserve les mesures, 31 % utilisés.`:'Dernière trame reçue il y a moins de 5 secondes. Mémoire Flash 8 Mo prête à enregistrer en cas de coupure.'}</p></div></aside></div>`;
+  return{html:h,after(){harm($('#ch-harm'),{vals:spectrum(pt,S.spec),limit:S.spec==='U'?RULES[3].v:RULES[4].v,lim:'seuil '+(S.spec==='U'?RULES[3].v:RULES[4].v)+' %'})}};
+}
+
+function vPerformance(){
+  const sel=S.perfSel,pf=perf(sel),label=sel==='all'?'DEPA (6 postes)':'PT '+sel;
+  const stat=g=>g>RULES[6].v?['crit','Dérive']:g<-3?['ok','Gain']:['ok','Conforme'];
+  let h=`<div class="chips" role="group" aria-label="Périmètre"><button type="button" data-act="psel" data-v="all" aria-pressed="${sel==='all'}">DEPA</button>${POSTES.map(p=>`<button type="button" data-act="psel" data-v="${p.id}" aria-pressed="${sel===p.id}">${p.name}</button>`).join('')}</div>
+  <div class="grid g-kpi">
+   <div class="card kpi"><small>Consommation, 30 derniers jours</small><b>${fmt(pf.actual/1000,1)}<i>MWh</i></b><span>${label}</span></div>
+   <div class="card kpi"><small>Consommation attendue (SER)</small><b>${fmt(pf.expected/1000,1)}<i>MWh</i></b><span>Pour l'activité portuaire constatée</span></div>
+   <div class="card kpi"><small>Écart à la situation de référence</small><b class="${pf.gap>RULES[6].v?'up':''}">${sgn(pf.gap)}<i>%</i></b><span>${stat(pf.gap)[1]} · seuil ± ${RULES[6].v} %</span></div>
+   <div class="card kpi"><small>IPE (énergie par tonne manutentionnée)</small><b>${fmt(pf.ipe,2)}<i>kWh/t</i></b><span>Référence ${fmt(pf.ipeRef,2)} kWh/t (${sgn(pf.ipeVar)} %)</span></div></div>
+  <div class="grid g-eq"><section class="card"><header><div><h2>Modèle de normalisation (SER)</h2><p>Énergie journalière en fonction du tonnage manutentionné. Période de référence : ${dm(dayT(REF[0]))} au ${dm(dayT(REF[REF.length-1]))}.</p></div></header>
+   <div class="legend" style="margin-bottom:6px"><span><span class="dot" style="background:var(--accent)"></span>Référence</span><span><span class="dot" style="background:var(--warn)"></span>30 derniers jours</span></div>
+   <div id="ch-sc"></div><p class="mono small" style="margin:8px 0 0">E = ${fmt(pf.f.a,0)} + ${fmt(pf.f.b,3)} × tonnage · R² = ${fmt(pf.f.r2,3)}</p></section>
+   <section class="card"><header><div><h2>Somme cumulée des écarts (CUSUM)</h2><p>Énergie réelle moins énergie attendue, jour après jour. Une pente qui monte signale une dérive.</p></div></header><div id="ch-cu"></div></section></div>
+  <section class="card"><header><div><h2>Indicateurs de performance énergétique par poste</h2><p>Variable pertinente : tonnage manutentionné (t/jour). Modèles paramétrables par poste.</p></div></header>
+   <div class="tw"><table><thead><tr><th>Poste</th><th class="n">Conso. 30 j (MWh)</th><th class="n">Attendue (MWh)</th><th class="n">Écart</th><th class="n">IPE (kWh/t)</th><th class="n">IPE réf.</th><th class="n">R²</th><th>Statut</th></tr></thead><tbody>
+   ${POSTES.map(p=>{const q=perf(p.id),s=stat(q.gap);return `<tr data-act="psel" data-v="${p.id}" class="${sel===p.id?'sel':''}"><td><span class="dot" style="background:${p.color}"></span><b>${p.name}</b></td><td class="n">${fmt(q.actual/1000,1)}</td><td class="n">${fmt(q.expected/1000,1)}</td><td class="n ${q.gap>RULES[6].v?'up':''}">${sgn(q.gap)} %</td><td class="n">${fmt(q.ipe,2)}</td><td class="n">${fmt(q.ipeRef,2)}</td><td class="n">${fmt(q.f.r2,2)}</td><td><span class="chip ${s[0]}">${s[1]}</span></td></tr>`}).join('')}
+   </tbody></table></div></section>`;
+  return{html:h,after(){
+    scatter($('#ch-sc'),{ref:pf.sRef,rep:pf.sRep,f:pf.f,xl:'Tonnage manutentionné (t/jour)'});
+    lineChart($('#ch-cu'),{series:[{name:'Écart cumulé',color:'var(--warn)',pts:pf.cusum.map((v,i)=>({t:dayT(REP[i]),v}))}],xfmt:dm,tfmt:dmy,unit:'kWh',zero:true,label:'CUSUM',h:290})}};
+}
+
+function periodDays(n){return n===1?[TODAY-1]:range(TODAY-n,TODAY-1)}
+function vAnalyses(){
+  const days=periodDays(S.anaP);
+  const cat=[['niche','Niches multiprises','var(--c1)'],['ECL','Éclairage','var(--c2)'],['BAT','Bâtiments','var(--c3)'],['GE','Groupes électrogènes','var(--c4)'],['res','Non mesuré (écart)','var(--c6)']];
+  const nodes=[{id:'net',col:0,label:'Réseau',color:'var(--ink)'},...POSTES.map(p=>({id:'p'+p.id,col:1,label:p.name,color:p.color})),...cat.map(c=>({id:c[0],col:2,label:c[1],color:c[2]}))];
+  const links=[];const items=[];
+  POSTES.forEach(p=>{
+    const E=pt=>sum(days.map(d=>ptDayE(pt,d)));
+    const tot=sum(tg(p).map(E));links.push({s:'net',t:'p'+p.id,v:tot,color:p.color});
+    const use={niche:0,ECL:0,BAT:0,GE:0};
+    p.points.filter(x=>x.kind!=='tgbt').forEach(x=>{const e=E(x);use[x.kind==='niche'?'niche':x.short]+=e;items.push({v:e,label:x.id.replace('-','·'),full:p.name+' · '+x.label})});
+    Object.keys(use).forEach(k=>{if(use[k]>0)links.push({s:'p'+p.id,t:k,v:use[k],color:p.color})});
+    links.push({s:'p'+p.id,t:'res',v:Math.max(0,tot-sum(Object.values(use))),color:'var(--c6)'});
+  });
+  items.sort((a,b)=>b.v-a.v);
+  const tot=sum(items.map(x=>x.v));let c=0,n80=0;items.forEach((x,i)=>{c+=x.v;if(!n80&&c/tot>=.8)n80=i+1});
+  const net=sum(links.filter(l=>l.s==='net').map(l=>l.v)),res=sum(links.filter(l=>l.t==='res').map(l=>l.v)),ni=sum(links.filter(l=>l.t==='niche').map(l=>l.v));
+  return{html:`<div class="ctrl"><div class="seg" role="group" aria-label="Période d'analyse">${[[1,'Hier'],[7,'7 jours'],[30,'30 jours']].map(([k,l])=>`<button type="button" data-act="anap" data-v="${k}" aria-pressed="${S.anaP===k}">${l}</button>`).join('')}</div><span class="muted small">${fmt(net/1000,1)} MWh sur la période · ${days.length} jour${days.length>1?'s':''}</span></div>
+   <section class="card"><header><div><h2>Du réseau aux usages</h2><p>Les niches multiprises représentent ${fmt(ni/net*100)} % de l'énergie des postes. ${fmt(res/net*100)} % n'est affecté à aucun départ mesuré : c'est la marge de progression de l'instrumentation.</p></div></header><div id="ch-sk"></div></section>
+   <section class="card"><header><div><h2>Concentration des consommations (Pareto)</h2><p>${n80} départs sur ${items.length} concentrent 80 % de l'énergie mesurée des départs secondaires.</p></div></header><div id="ch-pa"></div></section>`,
+   after(){sankey($('#ch-sk'),{nodes,links,h:Math.max(300,Math.min(420,window.innerWidth*.4))});pareto($('#ch-pa'),{items})}};
+}
+
+function vAlertes(){
+  const f=S.alF,list=ALERTS.filter(a=>f==='all'||a.st===f);
+  const dis=can('edit')?'':'disabled';
+  return{html:`<div class="grid g-al">
+  <section class="card"><header><div><h2>Journal des alertes</h2><p>${alertsActive().length} active${alertsActive().length>1?'s':''}</p></div><div class="seg" role="group" aria-label="Filtre">${[['all','Toutes'],['Active','Actives'],['Acquittée','Acquittées'],['Résolue','Résolues']].map(([k,l])=>`<button type="button" data-act="alf" data-v="${k}" aria-pressed="${f===k}">${l}</button>`).join('')}</div></header>
+  <div class="alist">${list.map(a=>`<div>${sevChip(a.sev)}<div class="t"><b>${a.title}</b><span class="muted small">${a.where} · ${ago(a.t)}</span><span class="small" style="display:block">${a.detail}</span>${a.sla?`<span class="chip info plain" style="margin-top:4px">${a.sla}</span>`:''}</div><div class="stack" style="gap:6px;align-items:flex-end">${stChip(a.st)}${a.st==='Active'?`<button class="btn" type="button" data-act="ack" data-v="${a.id}" ${can('ack')?'':'disabled'}>Acquitter</button>`:''}</div></div>`).join('')||'<p class="muted">Aucune alerte dans cette catégorie.</p>'}</div></section>
+  <section class="card"><header><div><h2>Règles et seuils</h2><p>Paramétrables, avec canal de notification.${can('edit')?'':' Votre profil est en lecture seule.'}</p></div></header>
+  ${RULES.map(r=>`<div class="rule"><input class="sw" type="checkbox" id="rs-${r.id}" data-act="ruleon" data-v="${r.id}" ${r.on?'checked':''} ${dis} aria-label="Activer la règle ${esc(r.label)}"><label for="rs-${r.id}"><b>${r.label}</b></label>
+   <div class="f"><input type="number" id="rv-${r.id}" data-act="rulev" data-v="${r.id}" value="${r.v}" step="${r.step||1}" ${dis} aria-label="Seuil"><span class="muted small">${r.unit}</span><select data-act="rulech" data-v="${r.id}" ${dis} aria-label="Canal de notification">${['Tableau de bord','E-mail','Les deux'].map(c=>`<option ${c===r.ch?'selected':''}>${c}</option>`).join('')}</select></div></div>`).join('')}
+  <div class="ctrl" style="margin-top:12px"><button class="btn primary" type="button" data-act="saveRules" ${can('edit')?'':'disabled'}>Enregistrer les seuils</button><span class="small muted" id="dirty">${S.dirty?'Modifications non enregistrées':''}</span></div></section></div>`,after(){}};
+}
+
+function repData(type){
+  const n={daily:1,weekly:7,monthly:30,annual:365}[type],days=periodDays(n);
+  const rows=POSTES.map(p=>{
+    const q=perf(p.id),E=sum(days.map(d=>dayE(p,d))),ex=sum(days.map(d=>q.f.a+q.f.b*act(d))),A=sum(days.map(act));
+    let pk=0;days.forEach(d=>(n>31?[13,14,15]:range(0,23)).forEach(h=>{const v=pPower(p,dayT(d)+h*36e5);if(v>pk)pk=v}));
+    const pf=sum(tg(p).map(x=>x.pf*x.share))/sum(tg(p).map(x=>x.share));
+    return{p,E,pk,pf,A,ipe:E/A,gap:(E-ex)/ex*100};
+  });
+  return{rows,days,n,tot:sum(rows.map(r=>r.E)),A:sum(periodDays(n).map(act))};
+}
+function repCSV(d,type){const L=['Poste;Énergie (kWh);Pointe (kW);cos phi moyen;IPE (kWh/t);Écart SER (%)'];
+  d.rows.forEach(r=>L.push([r.p.name,r.E.toFixed(0),r.pk.toFixed(0),r.pf.toFixed(2),r.ipe.toFixed(2),r.gap.toFixed(1)].join(';')));
+  L.push(['Total DEPA',d.tot.toFixed(0),'','',(d.tot/d.A).toFixed(2),''].join(';'));return L.join('\n')}
+function vRapports(){
+  const T={daily:['Quotidien','Rapport quotidien'],weekly:['Hebdomadaire','Rapport hebdomadaire'],monthly:['Mensuel','Rapport mensuel'],annual:['Annuel','Rapport annuel']};
+  const d=repData(S.repT),from=dayT(d.days[0]),to=dayT(d.days[d.days.length-1]);
+  const mx=Math.max(...d.rows.map(r=>r.E));
+  const csv=repCSV(d,S.repT);
+  return{html:`<div class="ctrl" style="justify-content:space-between"><div class="seg" role="group" aria-label="Type de rapport">${Object.keys(T).map(k=>`<button type="button" data-act="rept" data-v="${k}" aria-pressed="${S.repT===k}">${T[k][0]}</button>`).join('')}</div>
+   <div class="ctrl"><button class="btn primary" type="button" data-act="copycsv" ${can('exp')?'':'disabled'}>Copier en CSV</button></div></div>
+  <section class="card"><header><div><h2>${T[S.repT][1]} · ${d.n===1?dmy(from):dmy(from)+' au '+dmy(to)}</h2><p>Structuré selon l'ISO 50001, exploitable pour la revue énergétique et la planification énergétique.</p></div></header>
+  <div class="grid g-kpi" style="margin-bottom:12px"><div class="kpi"><small>Énergie totale</small><b>${fmt(d.tot/1000,d.tot>1e5?0:1)}<i>MWh</i></b></div><div class="kpi"><small>Activité portuaire</small><b>${fmt(d.A/1000,0)}<i>kt</i></b></div><div class="kpi"><small>IPE global</small><b>${fmt(d.tot/d.A,2)}<i>kWh/t</i></b></div></div>
+  <div class="tw"><table><thead><tr><th>Poste</th><th class="n">Énergie (kWh)</th><th></th><th class="n">Pointe (kW)</th><th class="n">cos φ</th><th class="n">IPE (kWh/t)</th><th class="n">Écart SER</th></tr></thead><tbody>
+  ${d.rows.map(r=>`<tr><td><span class="dot" style="background:${r.p.color}"></span><b>${r.p.name}</b></td><td class="n">${fmt(r.E)}</td><td style="min-width:90px"><span class="bar" style="width:${r.E/mx*80}px"></span></td><td class="n">${fmt(r.pk)}</td><td class="n">${fmt(r.pf,2)}</td><td class="n">${fmt(r.ipe,2)}</td><td class="n ${r.gap>RULES[6].v?'up':''}">${sgn(r.gap)} %</td></tr>`).join('')}</tbody></table></div></section>
+  <div class="grid g-eq"><section class="card"><header><div><h2>Aperçu de l'export</h2><p>Le texte copié se colle directement dans Excel. L'export fichier .xlsx est fourni par le serveur de la plateforme.</p></div></header><pre class="csv">${esc(csv)}</pre></section>
+  <section class="card"><header><div><h2>Diffusion automatique</h2><p>Envoi par e-mail à la génération du rapport.</p></div></header>
+  ${[['Quotidien','Tous les jours à 06:00','Équipe d\'exploitation'],['Hebdomadaire','Le lundi à 07:00','Responsable énergie'],['Mensuel','Le 1er du mois à 07:00','Direction d\'exploitation'],['Annuel','Le 2 janvier à 07:00','Revue énergétique']].map(([a,b,c],i)=>`<div class="rule"><input class="sw" type="checkbox" id="sch${i}" checked ${can('edit')?'':'disabled'} aria-label="${a}"><label for="sch${i}"><b>${a}</b></label><div class="f small muted">${b} · ${c}</div></div>`).join('')}</section></div>`,after(){}};
+}
+
+function vAdmin(){
+  const perm=[['Consulter les tableaux de bord',[1,1,1,1]],['Acquitter les alertes',[1,1,1,0]],['Modifier les seuils, la SER et les IPE',[1,1,0,0]],['Exporter les données et rapports',[1,1,1,0]],['Gérer les comptes et les points de comptage',[1,0,0,0]]];
+  const users=[['admin.depa','Administrateur',NOW-3.2*36e5,'Actif'],['energie.01','Gestionnaire énergie',NOW-20*36e5,'Actif'],['exploit.02','Opérateur',NOW-29*36e5,'Actif'],['exploit.03','Opérateur',NOW-4*MS,'Actif'],['lecteur.03','Lecteur',NOW-47*36e5,'Actif'],['stagiaire.01','Lecteur',NOW-190*MS,'Inactif']];
+  const health=[['Synchronisation horaire (NTP)','Décalage de 12 ms','ok'],['Collecte Modbus TCP/IP','57 points sur 58 · 0,4 % de trames en erreur','warn'],['Annuaire Active Directory / LDAP','Connecté','ok'],['Chiffrement HTTPS / TLS','Certificat valide, expire dans 214 jours','ok'],['Sauvegarde automatique','Dernière exécution à 02:00 · restauration testée','ok'],['Mises à jour de sécurité','2 correctifs disponibles','warn'],['Comptes inactifs','1 compte à supprimer','warn']];
+  const q=S.audit.toLowerCase();
+  const au=AUDIT.filter(a=>!q||(a.u+a.a+a.o).toLowerCase().includes(q));
+  return{html:`<div class="grid g-eq"><section class="card"><header><div><h2>État du système</h2><p>Contrôles de la maintenance préventive trimestrielle (Prix n°4).</p></div></header><div class="alist">${health.map(([a,b,s])=>`<div><span class="chip ${s}">${s==='ok'?'OK':'À traiter'}</span><div class="t"><b>${a}</b><span class="muted small">${b}</span></div></div>`).join('')}</div>
+   <div style="margin-top:12px"><div class="small muted" style="margin-bottom:4px">Stockage de la base : 380 Go sur 1 To</div><div class="meter"><i style="width:38%"></i></div></div></section>
+  <section class="card"><header><div><h2>Parc installé</h2><p>Licence permanente, 6 postes, 58 points de comptage.</p></div></header>
+  <div class="kv" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">${[['Centrales classe 0,5S','20'],['Centrales classe 0,2S','26'],['TC ouvrables','138'],['Compteurs existants','12'],['Points actifs','58'],['Postes','6']].map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('')}</div>
+  <p class="small muted">Les 12 compteurs existants du PT 1 sont des MEIER CMM61 en Modbus TCP/IP. Une passerelle ou un commutateur industriel complémentaire et une alimentation 24 V complètent l'intégration (Prix n°2).</p></section></div>
+  <div class="grid g-eq"><section class="card"><header><div><h2>Profils et droits</h2><p>Les tableaux de bord et les droits dépendent du profil. Changez de profil en haut de page pour le constater.</p></div></header><div class="tw"><table><thead><tr><th>Droit</th><th>Admin.</th><th>Énergie</th><th>Opér.</th><th>Lecteur</th></tr></thead><tbody>${perm.map(([a,v])=>`<tr><td>${a}</td>${v.map(x=>`<td>${x?'<span class="chip ok plain">Oui</span>':'<span class="muted">Non</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></section>
+  <section class="card"><header><div><h2>Comptes</h2><p>Authentification par l'annuaire d'entreprise.</p></div></header><div class="tw"><table><thead><tr><th>Identifiant</th><th>Profil</th><th>Dernière connexion</th><th>État</th></tr></thead><tbody>${users.map(u=>`<tr><td class="mono">${u[0]}</td><td>${u[1]}</td><td class="muted">${dmy(u[2])}</td><td><span class="chip ${u[3]==='Actif'?'ok':'warn'}">${u[3]}</span></td></tr>`).join('')}</tbody></table></div></section></div>
+  <section class="card"><header><div><h2>Ajouter un point de comptage</h2><p>Déclaration de l'équipement, rattachement au poste et ajout à la table des points de mesure.</p></div></header>
+  <form id="addpt" class="form"><label>Poste<select id="f-p">${POSTES.map(p=>`<option>${p.name}</option>`).join('')}</select></label><label>Désignation<input type="text" id="f-n" value="Niche multiprises N9" required></label><label>Adresse IP<input type="text" id="f-ip" value="10.24.10.30" required></label><label>Identifiant Modbus<input type="number" id="f-u" value="13" min="1" max="247" required></label><label>Classe<select id="f-c"><option>0,2S</option><option>0,5S</option></select></label><label>Calibre TC<select id="f-t">${CAL.map(c=>`<option>${c}/5A</option>`).join('')}</select></label>
+  <label>&nbsp;<button class="btn primary" type="submit">Ajouter le point</button></label></form></section>
+  <section class="card"><header><div><h2>Journal d'audit</h2><p>Traçabilité des accès et des modifications de paramétrage.</p></div><input type="text" id="aufilter" placeholder="Filtrer le journal" value="${esc(S.audit)}" aria-label="Filtrer le journal"></header>
+  <div class="tw"><table><thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th><th>Objet</th></tr></thead><tbody id="aubody">${au.map(a=>`<tr><td class="mono">${dm(a.t)} ${hm(a.t)}</td><td class="mono">${a.u}</td><td>${a.a}</td><td class="muted">${esc(a.o)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Aucune entrée.</td></tr>'}</tbody></table></div></section>`,after(){}};
+}
+
+
+/* ----- carte du port ----- */
+const SC={ok:'var(--good)',info:'var(--accent)',warn:'var(--warn)',crit:'var(--crit)'};
+const cable=L=>'M500,568V545H'+L.x+'V'+L.y;
+const HANGARS=[[30,330,56,34],[30,470,90,44],[150,320,64,28],[150,500,110,50],[300,330,70,26],[300,430,80,34],[470,320,70,26],[470,520,60,32],[640,330,64,30],[640,430,90,40],[700,500,120,50],[880,320,70,34],[880,440,90,50],[760,440,70,30],[350,500,90,40],[560,380,60,30]];
+function layerStat(p){
+  if(S.layer==='maint'){const m=mstate(p);return{cls:m.cls,text:m.label}}
+  if(S.layer==='qual'){const q=qualState(p);return{cls:q.cls,text:q.label}}
+  return{cls:'info',text:fmt(pPower(p,Date.now()))+' kW',color:p.color};
+}
+function mapSVG(){
+  const t=Date.now(),mx=Math.max(...POSTES.map(p=>pPower(p,t)));
+  let g='<defs><pattern id="wv" width="64" height="18" patternUnits="userSpaceOnUse"><path d="M0 9q16-9 32 0t32 0" fill="none" style="stroke:var(--accent)" stroke-width="1" opacity=".25"/></pattern></defs>';
+  if(S.bg)g+=`<image href="${S.bg}" x="0" y="0" width="1000" height="600" preserveAspectRatio="xMidYMid slice"/>`;
+  else{
+    g+='<rect width="1000" height="600" style="fill:var(--sea)"/><rect width="1000" height="310" fill="url(#wv)"/>';
+    g+='<path d="M0,600V300H180V250H330V300H520V230H700V300H1000V600Z" style="fill:var(--land);stroke:var(--quay)" stroke-width="3" stroke-linejoin="round"/>';
+    g+='<path d="M70,70Q500,10 930,78" fill="none" style="stroke:var(--quay)" stroke-width="16" stroke-linecap="round"/><text class="mapsub" x="500" y="24" text-anchor="middle" letter-spacing="3">DIGUE</text>';
+    g+='<text class="mapsub" x="500" y="170" text-anchor="middle" letter-spacing="6">BASSIN PORTUAIRE</text>';
+    g+='<path d="M0,405H1000M690,300V600" fill="none" style="stroke:var(--quay)" stroke-width="7" stroke-dasharray="18 10"/>';
+    g+=HANGARS.map(h=>`<rect x="${h[0]}" y="${h[1]}" width="${h[2]}" height="${h[3]}" rx="4" style="fill:var(--quay)" opacity=".8"/>`).join('');
+    g+='<g transform="translate(950,120)"><path d="M0,-22L8,6L0,0L-8,6Z" style="fill:var(--ink)"/><text class="mapsub" x="0" y="24" text-anchor="middle">N</text></g>';
+    g+='<text class="mapsub" x="16" y="592">Plan schématique, hors échelle</text>';
+  }
+  POSTES.forEach(p=>{const v=pPower(p,t);g+=`<path id="cb-${p.id}" class="flow" d="${cable(LOCS[p.id])}" fill="none" style="stroke:var(--accent)" stroke-width="${(1.5+3.5*v/mx).toFixed(1)}" opacity=".8"/>`});
+  g+='<rect x="440" y="568" width="120" height="28" rx="8" style="fill:var(--ink)"/><text x="500" y="587" text-anchor="middle" style="fill:var(--bg);font:600 12px var(--f-body)">Arrivée réseau</text>';
+  POSTES.forEach(p=>{
+    const L=LOCS[p.id],st=layerStat(p),col=st.color||SC[st.cls],sel=p.id===S.msel,al=st.cls==='warn'||st.cls==='crit';
+    g+=`<g class="mk" id="mk-${p.id}" data-id="${p.id}" transform="translate(${L.x},${L.y})" tabindex="0" role="button" aria-label="${p.name}, ${esc(L.zone)}">${al?`<circle class="pulse" r="22" style="fill:${col}"/>`:''}${sel?'<circle r="31" fill="none" style="stroke:var(--ink)" stroke-width="2" stroke-dasharray="4 4"/>':''}<circle r="23" style="fill:var(--surface);stroke:${col}" stroke-width="4"/><text y="5" text-anchor="middle" style="fill:var(--ink);font:700 14px var(--f-display)">${p.id}</text><text class="maplbl" y="44" text-anchor="middle">${p.name}</text><text class="mapsub" y="58" text-anchor="middle">${esc(st.text)}</text></g>`;
+  });
+  return `<svg viewBox="0 0 1000 600" role="img" aria-label="Plan schématique du port avec les 6 postes électriques">${g}</svg>`;
+}
+function bindMap(el){
+  const svg=$('svg',el);let drag=null;
+  const pt=e=>{const q=svg.createSVGPoint();q.x=e.clientX;q.y=e.clientY;return q.matrixTransform(svg.getScreenCTM().inverse())};
+  svg.addEventListener('pointerdown',e=>{const m=e.target.closest('.mk');if(!m)return;drag={id:m.dataset.id,moved:false,sx:e.clientX,sy:e.clientY};try{svg.setPointerCapture(e.pointerId)}catch(x){}});
+  svg.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)<5)return;
+    drag.moved=true;const q=pt(e),L=LOCS[drag.id];
+    L.x=Math.round(Math.max(26,Math.min(974,q.x)));L.y=Math.round(Math.max(26,Math.min(530,q.y)));
+    $('#mk-'+drag.id,svg).setAttribute('transform','translate('+L.x+','+L.y+')');$('#cb-'+drag.id,svg).setAttribute('d',cable(L));
+  });
+  svg.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(d.moved){store('enerport.loc',LOCS);toast('Position enregistrée')}else{S.msel=d.id;render(true)}});
+  svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const m=e.target.closest('.mk');if(m){e.preventDefault();S.msel=m.dataset.id;render(true)}}});
+}
+function loadBg(f){
+  if(!f)return;if(f.size>6e6){toast('Image trop lourde (6 Mo maximum)');return}
+  const r=new FileReader();r.onload=()=>{S.bg=r.result;render(true);toast('Plan importé')};r.readAsDataURL(f);
+}
+function vCarte(){
+  const p=POSTES.find(x=>x.id===S.msel),t=Date.now(),L=LOCS[p.id],ms=mstate(p),qs=qualState(p);
+  const hwn=range(0,7).filter(i=>hwOk(p,i)).length,na=ALERTS.filter(a=>a.st==='Active'&&a.where.startsWith(p.name)).length;
+  const LEG={power:[['var(--accent)','Câble : épaisseur proportionnelle à la puissance appelée'],['var(--warn)','Halo pulsant : point à traiter']],
+    maint:[['var(--good)','À jour'],['var(--accent)','Visite à moins de 30 jours'],['var(--warn)','Réserves à lever'],['var(--crit)','Intervention en cours']],
+    qual:[['var(--good)','Conforme'],['var(--warn)','Point à surveiller'],['var(--crit)','Point hors ligne']]}[S.layer];
+  const dt=d=>d?dmy(dayT(d)):'—';
+  return{html:`<div class="ctrl" style="justify-content:space-between"><div class="seg" role="group" aria-label="Couche affichée">${[['power','Puissance'],['maint','Maintenance'],['qual','Qualité d\'énergie']].map(([k,l])=>`<button type="button" data-act="layer" data-v="${k}" aria-pressed="${S.layer===k}">${l}</button>`).join('')}</div>
+   <div class="ctrl"><label class="btn" style="cursor:pointer">Importer le plan du port<input type="file" accept="image/*" data-act="mapbg" hidden></label>${S.bg?'<button class="btn" type="button" data-act="rmbg">Retirer le plan</button>':''}<button class="btn" type="button" data-act="resetmap">Réinitialiser les positions</button></div></div>
+  <div class="split2"><section class="card"><header><div><h2>Port d'Agadir · 6 postes électriques</h2><p>Emplacements illustratifs. Glissez un repère à son emplacement réel, ou importez le plan du port en arrière-plan. Les câbles animés suivent la puissance appelée.</p></div></header>
+   <div class="mapwrap" id="map">${mapSVG()}</div>
+   <div class="legend" style="margin-top:10px">${LEG.map(([c,l])=>`<span><span class="dot" style="background:${c}"></span>${l}</span>`).join('')}</div></section>
+  <aside class="card stack"><header style="margin:0"><div><h2>${p.name}</h2><p class="mono">repère x ${L.x} · y ${L.y}</p></div><span class="chip ${ms.cls}">${ms.label}</span></header>
+   <label class="small muted" for="zone" style="display:flex;flex-direction:column;gap:3px">Secteur du poste<input type="text" id="zone" data-act="zone" data-v="${p.id}" value="${esc(L.zone)}"></label>
+   <div class="chips"><span class="chip ${qs.cls}">Qualité : ${qs.label}</span><span class="chip ${na?'warn':'ok'}">${na} alerte${na>1?'s':''} active${na>1?'s':''}</span></div>
+   <div class="kv"><div><small>Puissance appelée</small><b>${fmt(pPower(p,t))}<i>kW</i></b></div><div><small>Points actifs</small><b>${p.points.filter(x=>x.status!=='off').length}<i>/ ${p.points.length}</i></b></div><div><small>Contrôles matériel</small><b>${hwn}<i>/ 8</i></b></div><div><small>Dernière visite</small><b style="font-size:13px">${dt(ms.last)}</b></div><div><small>Prochaine visite</small><b style="font-size:13px">${dt(ms.next)}</b></div><div><small>Origine</small><b style="font-size:13px">${p.exist?'Existant':'Neuf'}</b></div></div>
+   <div class="ctrl"><button class="btn primary" type="button" data-act="gopts" data-v="${p.id}">Points de comptage</button><button class="btn" type="button" data-act="gomaint">Maintenance</button></div></aside></div>`,
+   after(){bindMap($('#map'))}};
+}
+
+/* ----- maintenance ----- */
+function vMaintenance(){
+  const elapsed=TODAY-RECEP,m0=mstate(POSTES[0]),nextAll=Math.min(...POSTES.map(p=>mstate(p).next));
+  const okHw=sum(POSTES.map(p=>range(0,7).filter(i=>hwOk(p,i)).length)),open=INTER.filter(i=>i.st!=='Clôturée').length;
+  const sla=i=>{if(!i.due)return'—';const r=i.due-Date.now();return Math.floor(r/MS)+' j '+Math.floor(r%MS/36e5)+' h restants'};
+  const tl=range(1,8).map(k=>{const d=visDate(POSTES[0],k),dn=d<=TODAY,nx=!dn&&k===m0.done+1;return `<div class="${dn?'done':nx?'next':''}"><b>Visite ${k}</b><br><span class="muted">${dmy(dayT(d))}</span><br><span class="small ${nx?'up':'muted'}">${dn?'Réalisée':nx?'Prochaine':'Prévue'}</span></div>`}).join('');
+  const vm=`<table><thead><tr><th>Poste</th>${range(1,8).map(k=>`<th class="n">V${k}</th>`).join('')}</tr></thead><tbody>${POSTES.map(p=>`<tr><td><b>${p.name}</b></td>${range(1,8).map(k=>{
+    const d=visDate(p,k),dn=d<=TODAY,nx=!dn&&k===mstate(p).done+1,c=dn?(p.id==='Z'&&k===2?'warn':'ok'):nx?'info':'';
+    return `<td><div class="cell ${c}" title="${dmy(dayT(d))}">${dn?(c==='warn'?'Rés.':'OK'):nx?dm(dayT(d)):'·'}</div></td>`}).join('')}</tr>`).join('')}</tbody></table>`;
+  const hm_=`<table><thead><tr><th>Contrôle matériel</th>${POSTES.map(p=>`<th class="n">${p.id}</th>`).join('')}</tr></thead><tbody>${HW.map((h,i)=>`<tr><td class="small">${h}</td>${POSTES.map(p=>`<td><div class="cell ${hwOk(p,i)?'ok':'warn'}" title="${p.name}">${hwOk(p,i)?'OK':'!'}</div></td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  return{html:`<div class="grid g-kpi">
+   <div class="card kpi"><small>Garantie contractuelle</small><b>Mois ${Math.min(24,Math.ceil(elapsed/30.4))}<i>/ 24</i></b><div class="meter" style="margin-top:6px"><i style="width:${Math.min(100,elapsed/7.3).toFixed(0)}%"></i></div><span>Réception provisoire fictive au ${dmy(dayT(RECEP))}</span></div>
+   <div class="card kpi"><small>Visites préventives réalisées</small><b>${m0.done}<i>/ 8</i></b><span>4 visites par an pendant 24 mois</span></div>
+   <div class="card kpi"><small>Prochaine visite</small><b>${nextAll-TODAY}<i>jours</i></b><span>Le ${dmy(dayT(nextAll))}</span></div>
+   <div class="card kpi"><small>Interventions ouvertes</small><b>${open}</b><span>Délai : 48 h si bloquant, 7 jours sinon</span></div>
+   <div class="card kpi"><small>Contrôles matériel conformes</small><b>${fmt(okHw/(POSTES.length*8)*100)}<i>%</i></b><span>${POSTES.length*8-okHw} point${POSTES.length*8-okHw>1?'s':''} à surveiller</span></div></div>
+  <section class="card"><header><div><h2>Calendrier des visites préventives</h2><p>Une visite par trimestre sur l'ensemble des 6 postes, selon un calendrier validé par le maître d'ouvrage.</p></div></header><div class="tl">${tl}</div></section>
+  <div class="grid g-eq"><section class="card"><header><div><h2>Avancement par poste</h2><p>OK : visite réalisée sans réserve. Rés. : réserves à lever.</p></div></header><div class="tw">${vm}</div></section>
+  <section class="card"><header><div><h2>Contrôles matériel de la dernière visite</h2><p>Huit points de contrôle par poste (Prix n°4).</p></div></header><div class="tw">${hm_}</div></section></div>
+  <div class="grid g-eq"><section class="card"><header><div><h2>Interventions</h2><p>Préventives et correctives, avec échéance contractuelle.</p></div></header><div class="alist">${INTER.map(i=>`<div><span class="chip ${i.st==='En cours'?'crit':i.st==='Planifiée'?'warn':'ok'} plain">${i.st}</span><div class="t"><b>${i.id} · ${i.p}</b><span class="small">${i.obj}</span><span class="muted small" style="display:block">${i.kind} · ouverte le ${dm(i.t)}${i.due?' · '+sla(i):''}</span></div></div>`).join('')}</div></section>
+  <section class="card"><header><div><h2>Contrôles logiciels de la plateforme</h2><p>Vérifiés à chaque visite.</p></div></header><div class="alist">${SW.map((s_,i)=>`<div><span class="chip ${SWW.includes(i)?'warn':'ok'}">${SWW.includes(i)?'À traiter':'OK'}</span><div class="t">${s_}</div></div>`).join('')}</div></section></div>
+  <section class="card"><header><div><h2>Pièces de rechange</h2><p>Stock du titulaire pour la période de garantie. Valeurs d'exemple.</p></div></header><div class="tw"><table><thead><tr><th>Pièce</th><th class="n">Stock</th><th class="n">Minimum</th><th>État</th></tr></thead><tbody>${SPARES.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${r[2]}</td><td><span class="chip ${r[1]>=r[2]?'ok':'warn'}">${r[1]>=r[2]?'Suffisant':'À réapprovisionner'}</span></td></tr>`).join('')}</tbody></table></div></section>`,after(){}};
+}
+
+const CONF=[
+ ['Prix n°1 · art. 47.1','Centrales 0,5S et 0,2S, tension, courant, P, Q, S, énergies','Tableau des points : U, I, P, cos φ, classe de précision','Maquette'],
+ ['Prix n°1 · art. 47.1','Harmoniques jusqu\'au rang 40, THD-U et THD-I, creux de tension','Spectre rangs 2 à 40 et liste des creux par point','Maquette'],
+ ['Prix n°1 · art. 51','TC ouvrables 63 A à 2 000 A, 138 unités','Calibre de chaque TC dans le tableau des points','Maquette'],
+ ['Prix n°1 · art. 47.1','Mémoire Flash 8 Mo, écran LCD, Ethernet Modbus TCP/IP natif','État de la mémoire et de la communication par point','Au déploiement'],
+ ['Prix n°2 · art. 51','Intégration des 12 compteurs existants du PT 1, cartographie Modbus','PT 1 en « existant », adresses et identifiants Modbus','Maquette'],
+ ['Prix n°3 · art. 47.3','Licence permanente, 6 postes, 58 points, évolutive','Parc installé (administration)','Maquette'],
+ ['Prix n°3 · art. 47.3','Tableaux de bord multisites configurables par niveau d\'utilisateur','Widgets personnalisables, valeurs par défaut selon le profil','Maquette'],
+ ['Prix n°3 · art. 47.3','Historisation haute fréquence (pas de 15 minutes)','Courbe de charge 24 h, 7 jours et 30 jours','Maquette'],
+ ['Prix n°3 · art. 47.3','Alertes et notifications paramétrables','Journal des alertes, seuils, canaux, acquittement','Maquette'],
+ ['Prix n°3 · art. 47.3','Analyses avancées : Sankey, Pareto, régressions linéaires','Écrans Analyses et Performance','Maquette'],
+ ['Prix n°3 · art. 47.3','SER, IPE par poste, modèles de normalisation','Écran Performance : SER, IPE, CUSUM, R²','Maquette'],
+ ['Prix n°3 · art. 47.3','Reporting quotidien, hebdomadaire, mensuel, annuel','Écran Rapports, diffusion automatique','Maquette'],
+ ['Prix n°3 · art. 47.3','Export CSV/Excel','Copie CSV dans la maquette, fichier .xlsx côté serveur','Au déploiement'],
+ ['Prix n°3 · art. 47.2','Journal d\'audit des accès et des modifications','Journal d\'audit alimenté par les actions de la session','Maquette'],
+ ['Prix n°3 · art. 47.2','Gestion des rôles et des habilitations par profil','Sélecteur de profil, droits appliqués à l\'interface','Maquette'],
+ ['Prix n°3 · art. 47.2','Installation sur serveur du maître d\'ouvrage, sans abonnement Cloud','Hébergement On-Premise (VMware vSphere ou Hyper-V)','Au déploiement'],
+ ['Prix n°3 · art. 47.2','Active Directory/LDAP, HTTPS/TLS, IEC 62443','Indiqués dans l\'état du système, configuration à l\'installation','Au déploiement'],
+ ['Prix n°3 · art. 47.2','Protocole Modbus TCP/IP de bout en bout, évolutif BACnet, M-Bus, API REST','Collecte réelle des trames par le serveur','Au déploiement'],
+ ['Prix n°3.4 · art. 51','Formation des utilisateurs et des administrateurs','Deux profils de droits distincts (utilisateur, administrateur)','Hors interface'],
+ ['Prix n°4 · art. 49','Maintenance préventive trimestrielle, contrôles matériel et logiciel','État du système (administration) et contrôles par visite (maintenance)','Maquette'],
+ ['Prix n°4 · art. 47.4','Délais d\'intervention : 48 h si bloquant, 7 jours sinon','Échéance de chaque intervention affichée dans Maintenance','Maquette'],
+ ['Prix n°4 · art. 49','Garantie de 24 mois, procès-verbaux de visite','Calendrier des 8 visites et avancement par poste','Maquette']];
+function vConf(){
+  const cnt=k=>CONF.filter(c=>c[3]===k).length;
+  return{html:`<div class="grid g-kpi"><div class="card kpi"><small>Exigences relevées</small><b>${CONF.length}</b></div><div class="card kpi"><small>Visibles dans la maquette</small><b>${cnt('Maquette')}</b></div><div class="card kpi"><small>À réaliser au déploiement</small><b>${cnt('Au déploiement')}</b></div><div class="card kpi"><small>Hors interface</small><b>${cnt('Hors interface')}</b></div></div>
+  <section class="card"><header><div><h2>Correspondance CPS et interface</h2><p>Appel d'offres ouvert n° 12/DEPA/2026 · articles 47, 49 et 51.</p></div></header><div class="tw"><table><thead><tr><th>Réf. CPS</th><th>Exigence</th><th>Dans la plateforme</th><th>Statut</th></tr></thead><tbody>${CONF.map(c=>`<tr><td class="mono small" style="white-space:nowrap">${c[0]}</td><td>${c[1]}</td><td class="muted">${c[2]}</td><td><span class="chip ${c[3]==='Maquette'?'ok':c[3]==='Au déploiement'?'warn':'info'}">${c[3]}</span></td></tr>`).join('')}</tbody></table></div></section>`,after(){}};
+}
+const VIEWS={supervision:vSupervision,carte:vCarte,postes:vPostes,performance:vPerformance,analyses:vAnalyses,alertes:vAlertes,maintenance:vMaintenance,rapports:vRapports,administration:vAdmin,conformite:vConf};
+
+/* ---------- rendu et routage ---------- */
+function drawNav(){
+  const keys=Object.keys(VIEWS).filter(k=>k!=='administration'||can('adm'));
+  $('#nav').innerHTML=keys.map(k=>`<a href="#${k}" ${k===S.view?'aria-current="page"':''}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>${TITLES[k].split(' ')[0]==='Postes'?'Postes':TITLES[k].split(' ')[0]}</a>`).join('');
+}
+function render(keep){
+  const y=window.scrollY;ro.disconnect();
+  const r=VIEWS[S.view]();
+  $('#view').innerHTML=r.html;$('#title').textContent=TITLES[S.view];$('#sub').textContent=SUBS[S.view];document.title='EnerPort SME';
+  drawNav();r.after&&r.after();refreshLive();
+  if(keep)window.scrollTo(0,y);
+}
+function go(v){if(!VIEWS[v])v='supervision';if(v==='administration'&&!can('adm'))v='supervision';const ch=S.view!==v;S.view=v;render(!ch);if(ch)window.scrollTo(0,0)}
+function refreshLive(){
+  const t=Date.now(),set=(k,v)=>{const e=$('[data-live="'+k+'"]');if(e)e.textContent=v};
+  $('#clock').textContent='En direct · '+hm(t)+':'+pad(new Date(t).getSeconds());
+  if(S.view!=='supervision')return;
+  const P=allPower(t),Py=allPower(t-MS);
+  set('pw',fmt(P));
+  const dl=(P/Py-1)*100;const e=$('[data-live="pwd"]');if(e){e.textContent=sgn(dl)+' % vs hier à la même heure';e.className=dl>0?'up':'dn'}
+  const t0=t-hourOf(t)*36e5;let en=0;for(let s=t0;s<t;s+=9e5)en+=allPower(s)*.25;set('en',fmt(en));
+  POSTES.forEach(p=>set('pp-'+p.id,fmt(pPower(p,t))));
+}
+function drawControls(){
+  $('#role').innerHTML=Object.keys(ROLES).map(k=>`<option value="${k}" ${k===S.role?'selected':''}>${ROLES[k].label}</option>`).join('');
+}
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el||el.tagName==='INPUT'||el.tagName==='SELECT')return;
+  const a=el.dataset.act,v=el.dataset.v;
+  const R=()=>render(true);
+  if(a==='cust'){S.cust=!S.cust;R()}
+  else if(a==='period'){S.period=v;R()}
+  else if(a==='mode'){S.mode=v;R()}
+  else if(a==='hide'){S.hidden[v]=!S.hidden[v];R()}
+  else if(a==='gopost'){S.poste=v;location.hash='postes'}
+  else if(a==='poste'){S.poste=v;S.pt=POSTES.find(p=>p.id===v).points[0].id;R()}
+  else if(a==='pt'){S.pt=v;R()}
+  else if(a==='spec'){S.spec=v;R()}
+  else if(a==='psel'){S.perfSel=v;R()}
+  else if(a==='anap'){S.anaP=+v;R()}
+  else if(a==='alf'){S.alF=v;R()}
+  else if(a==='ack'){const al=ALERTS.find(x=>x.id==+v);al.st='Acquittée';log('Acquittement','Alerte '+al.where+' · '+al.title);toast('Alerte acquittée');R()}
+  else if(a==='saveRules'){S.dirty=false;log('Modification de seuils',RULES.map(r=>r.id+'='+r.v).join(', '));toast('Seuils enregistrés');R()}
+  else if(a==='rept'){S.repT=v;R()}
+  else if(a==='layer'){S.layer=v;R()}
+  else if(a==='gomap'){S.msel=v;location.hash='carte'}
+  else if(a==='gomaint'){location.hash='maintenance'}
+  else if(a==='gopts'){S.poste=v;S.pt=POSTES.find(p=>p.id===v).points[0].id;location.hash='postes'}
+  else if(a==='resetmap'){Object.keys(LOCS).forEach(k=>Object.assign(LOCS[k],LOC0[k]));store('enerport.loc',LOCS);R();toast('Positions réinitialisées')}
+  else if(a==='rmbg'){S.bg=null;R()}
+  else if(a==='copycsv'){const d=repData(S.repT);copy(repCSV(d,S.repT),'CSV copié dans le presse-papiers');log('Export',"Rapport "+S.repT+" (CSV)")}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('tr[data-act]'))e.target.click()});
+document.addEventListener('change',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='mapbg'){loadBg(el.files&&el.files[0])}
+  else if(a==='widget'){S.widgets[el.dataset.k]=el.checked?1:0;store('enerport.widgets',S.widgets);log('Personnalisation','Tableau de bord');render(true)}
+  else if(a==='ruleon'){RULES.find(r=>r.id===el.dataset.v).on=el.checked;S.dirty=true;const d=$('#dirty');if(d)d.textContent='Modifications non enregistrées'}
+  else if(a==='rulech'){RULES.find(r=>r.id===el.dataset.v).ch=el.value;S.dirty=true;const d=$('#dirty');if(d)d.textContent='Modifications non enregistrées'}
+});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset.act==='rulev'){const r=RULES.find(x=>x.id===el.dataset.v);r.v=parseFloat(el.value)||0;S.dirty=true;const d=$('#dirty');if(d)d.textContent='Modifications non enregistrées'}
+  else if(el.dataset.act==='zone'){LOCS[el.dataset.v].zone=el.value;store('enerport.loc',LOCS)}
+  else if(el.id==='aufilter'){S.audit=el.value;const q=S.audit.toLowerCase();const au=AUDIT.filter(a=>!q||(a.u+a.a+a.o).toLowerCase().includes(q));
+    $('#aubody').innerHTML=au.map(a=>`<tr><td class="mono">${dm(a.t)} ${hm(a.t)}</td><td class="mono">${a.u}</td><td>${a.a}</td><td class="muted">${esc(a.o)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Aucune entrée.</td></tr>'}
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='addpt'){e.preventDefault();log('Ajout de point de comptage',$('#f-p').value+' · '+$('#f-n').value+' · '+$('#f-ip').value+' · classe '+$('#f-c').value);toast('Point ajouté à la table des mesures (simulation)');render(true)}
+});
+$('#role').addEventListener('change',e=>{S.role=e.target.value;S.widgets={...ROLES[S.role].w};store('enerport.widgets',S.widgets);if(S.view==='administration'&&!can('adm'))location.hash='supervision';else render(true);toast('Profil : '+ROLES[S.role].label)});
+$('#theme').addEventListener('click',()=>{
+  const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme=dark?'light':'dark';store('enerport.theme',r.dataset.theme);render(true)});
+const th=store('enerport.theme');if(th)document.documentElement.dataset.theme=th;
+window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
+drawControls();
+S.view=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'supervision';
+render();
+setInterval(refreshLive,5000);
+})();
+</script>
+
+</body>
+</html>
